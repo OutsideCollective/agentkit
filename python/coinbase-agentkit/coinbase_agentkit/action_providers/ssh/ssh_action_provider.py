@@ -18,6 +18,10 @@ from ...network import Network
 from ..action_decorator import create_action
 from ..action_provider import ActionProvider
 
+# Import SSH implementation classes - Updated to use the new module structure
+from .connection import SSHConnectionError, SSHKeyError
+from .connection_pool import SSHConnectionPool
+
 # Import action schemas
 from .schemas import (
     ConnectionStatusSchema,
@@ -26,14 +30,7 @@ from .schemas import (
     FileUploadSchema,
     ListConnectionsSchema,
     RemoteShellSchema,
-)
-
-# Import SSH implementation classes
-from .ssh import (
-    SSHConnectionError,
-    SSHConnectionParams,
-    SSHConnectionPool,
-    SSHKeyError,
+    SSHConnectionSchema,
 )
 
 
@@ -81,7 +78,7 @@ Notes:
 - Either password or key authentication required
 - Default key path is ~/.ssh/id_rsa if not specified
 """,
-        schema=SSHConnectionParams,
+        schema=SSHConnectionSchema,
     )
     def ssh_connect(self, args: dict[str, Any]) -> str:
         """Establish SSH connection to remote server.
@@ -103,7 +100,7 @@ Notes:
             if args.get("connection_id") is None:
                 args["connection_id"] = str(uuid.uuid4())
 
-            validated_args = SSHConnectionParams(**args)
+            validated_args = SSHConnectionSchema(**args)
             connection_id = validated_args.connection_id
 
             with contextlib.suppress(SSHConnectionError):

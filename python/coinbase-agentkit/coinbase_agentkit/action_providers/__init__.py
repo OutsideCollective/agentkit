@@ -16,6 +16,7 @@ from .hyperboliclabs.hyperbolic_action_provider import (
 )
 from .morpho.morpho_action_provider import MorphoActionProvider, morpho_action_provider
 from .pyth.pyth_action_provider import PythActionProvider, pyth_action_provider
+from .ssh.ssh_action_provider import SshActionProvider, ssh_action_provider
 from .superfluid.superfluid_action_provider import (
     SuperfluidActionProvider,
     superfluid_action_provider,
@@ -55,4 +56,6 @@ __all__ = [
     "wow_action_provider",
     "HyperbolicActionProvider",
     "hyperbolic_action_provider",
+    "SshActionProvider",
+    "ssh_action_provider",
 ]

@@ -1,25 +1,15 @@
-"""Exports for ssh action provider.
+"""SSH connection package.
 
-@module ssh
+This package provides SSH connection functionality for the agent toolkit.
 """
 
-from .schemas import (
-    ConnectionStatusSchema,
-    DisconnectSchema,
-    FileDownloadSchema,
-    FileUploadSchema,
-    ListConnectionsSchema,
-    RemoteShellSchema,
-)
-from .ssh import SSHConnection
-from .ssh_action_provider import SshActionProvider, ssh_action_provider
+from .connection import SSHConnection, SSHConnectionError, SSHConnectionParams, SSHKeyError
+from .connection_pool import SSHConnectionPool
 
 __all__ = [
-    "SshActionProvider",
     "SSHConnection",
-    "ssh_action_provider",
-    "RemoteShellSchema",
-    "DisconnectSchema",
-    "ConnectionStatusSchema",
-    "ListConnectionsSchema",
+    "SSHConnectionPool",
+    "SSHConnectionParams",
+    "SSHConnectionError",
+    "SSHKeyError",
 ]

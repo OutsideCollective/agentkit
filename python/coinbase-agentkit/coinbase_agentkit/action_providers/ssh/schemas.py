@@ -8,6 +8,10 @@ for the ssh action provider's actions.
 
 from pydantic import BaseModel, Field
 
+from .connection import SSHConnectionParams
+
+SSHConnectionSchema = SSHConnectionParams
+
 
 class RemoteShellSchema(BaseModel):
     """Schema for remote_shell action."""

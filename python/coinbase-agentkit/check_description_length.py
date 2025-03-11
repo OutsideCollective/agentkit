@@ -2,6 +2,7 @@
 
 import os
 import re
+import sys
 
 
 def check_file(filepath):
@@ -23,7 +24,12 @@ def check_file(filepath):
     print("\n")
 
 
-# Check files in marketplace provider
+# Check specific file if provided as argument
+if len(sys.argv) > 1:
+    check_file(sys.argv[1])
+    sys.exit(0)
+
+# Otherwise, check files in marketplace provider
 base_dir = "coinbase_agentkit/action_providers/hyperboliclabs"
 dirs = ["marketplace", "ai", "billing", "settings"]
 
@@ -32,3 +38,8 @@ for dir_name in dirs:
     for file in os.listdir(dir_path):
         if file.endswith("action_provider.py"):
             check_file(os.path.join(dir_path, file))
+
+# Also check the SSH provider
+ssh_file = "coinbase_agentkit/action_providers/ssh/ssh_action_provider.py"
+if os.path.exists(ssh_file):
+    check_file(ssh_file)

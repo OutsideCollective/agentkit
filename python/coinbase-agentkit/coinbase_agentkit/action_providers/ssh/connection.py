@@ -3,7 +3,7 @@
 This module implements the SSHConnection class, which manages SSH connections
 to remote servers and provides functionality for executing commands.
 
-@module ssh/ssh
+@module ssh/connection
 """
 
 import contextlib
@@ -43,7 +43,7 @@ class SSHConnectionParams(BaseModel):
     @classmethod
     @model_validator(mode="after")
     def check_auth_method_provided(cls):
-        """Validates that at least one auth method is provided."""
+        """Ensure at least one authentication method is provided."""
         if not any([cls.password, cls.private_key, cls.private_key_path]):
             raise ValueError(
                 "At least one authentication method must be provided (password, private_key, or private_key_path)"
@@ -167,7 +167,9 @@ class SSHConnection:
         self.connected = True
         self.connection_time = datetime.now()
 
-    def _load_key_from_string(self, key_string: str, password: str | None = None) -> paramiko.RSAKey:
+    def _load_key_from_string(
+        self, key_string: str, password: str | None = None
+    ) -> paramiko.RSAKey:
         """Load an RSA key from a string.
 
         Args:
@@ -186,11 +188,11 @@ class SSHConnection:
         try:
             # Try with provided password or None
             return paramiko.RSAKey.from_private_key(key_file, password=password)
-        except paramiko.ssh_exception.PasswordRequiredException:
+        except paramiko.ssh_exception.PasswordRequiredException as err:
             # If password is required but not provided or incorrect
-            raise SSHKeyError("Password-protected key provided but no password was given")
+            raise SSHKeyError("Password-protected key provided but no password was given") from err
         except Exception as e:
-            raise SSHKeyError(f"Failed to load key from string: {e!s}")
+            raise SSHKeyError(f"Failed to load key from string: {e!s}") from e
 
     def connect_with_key(
         self,
@@ -232,7 +234,7 @@ class SSHConnection:
             # Pass through key errors
             raise
         except Exception as e:
-            raise SSHConnectionError(f"Failed to connect with key: {e!s}")
+            raise SSHConnectionError(f"Failed to connect with key: {e!s}") from e
 
     def connect_with_key_path(
         self,
@@ -260,13 +262,18 @@ class SSHConnection:
 
         try:
             key_obj = self._load_key_from_file(private_key_path, password=password)
-            self.connect_with_key(host, username, key_obj, port=port, timeout=timeout)
+            try:
+                self.connect_with_key(host, username, key_obj, port=port, timeout=timeout)
+            except SSHConnectionError as e:
+                # Add more context about the key being used
+                raise SSHConnectionError(
+                    f"Failed to authenticate with key at {private_key_path}: {e!s}"
+                ) from e
+        except SSHKeyError:
+            # Pass through key loading errors
+            raise
         except Exception as e:
-            if isinstance(e, SSHKeyError | SSHConnectionError):
-                # Pass through SSH-specific errors
-                raise
-            else:
-                raise SSHConnectionError(f"Failed to connect with key file: {e!s}")
+            raise SSHConnectionError(f"Failed to connect with key file: {e!s}") from e
 
     def _load_key_from_file(self, key_path: str, password: str | None = None) -> paramiko.RSAKey:
         """Load an RSA key from a file path.
@@ -283,13 +290,15 @@ class SSHConnection:
 
         """
         try:
-            # Try with provided password or None
             return paramiko.RSAKey.from_private_key_file(key_path, password=password)
-        except paramiko.ssh_exception.PasswordRequiredException:
+        except paramiko.ssh_exception.PasswordRequiredException as err:
             # If password is required but not provided or incorrect
-            raise SSHKeyError("Password-protected key file requires a password")
+            raise SSHKeyError("Password-protected key file requires a password") from err
+        except paramiko.ssh_exception.SSHException as e:
+            # More specific error for key format issues
+            raise SSHKeyError(f"Invalid key format in {key_path}: {e!s}") from e
         except Exception as e:
-            raise SSHKeyError(f"Failed to load key file: {e!s}")
+            raise SSHKeyError(f"Failed to load key file {key_path}: {e!s}") from e
 
     def connect_with_password(
         self, host: str, username: str, password: str, port: int = 22, timeout: int = 10
@@ -315,7 +324,7 @@ class SSHConnection:
                 hostname=host, username=username, password=password, port=port, timeout=timeout
             )
         except Exception as e:
-            raise SSHConnectionError(f"Failed to connect with password: {e!s}")
+            raise SSHConnectionError(f"Failed to connect with password: {e!s}") from e
 
     def execute(self, command: str, timeout: int = 30, ignore_stderr: bool = False) -> str:
         """Execute command on connected server.
@@ -372,7 +381,7 @@ class SSHConnection:
 
         except Exception as e:
             self.reset_connection()
-            raise SSHConnectionError(f"Command execution failed on {params.connection_id}: {e!s}")
+            raise SSHConnectionError(f"Command execution failed on {params.connection_id}: {e!s}") from e
 
     def disconnect(self) -> None:
         """Close SSH connection.
@@ -431,7 +440,7 @@ class SSHConnection:
             return self.ssh_client.open_sftp()
         except Exception as e:
             self.reset_connection()
-            raise SSHConnectionError(f"Failed to initialize SFTP client: {e!s}")
+            raise SSHConnectionError(f"Failed to initialize SFTP client: {e!s}") from e
 
     def upload_file(self, local_path: str, remote_path: str) -> None:
         """Upload a local file to the remote server.
@@ -455,7 +464,7 @@ class SSHConnection:
             sftp.close()
         except Exception as e:
             self.reset_connection()
-            raise SSHConnectionError(f"File upload failed for {params.connection_id}: {e!s}")
+            raise SSHConnectionError(f"File upload failed for {params.connection_id}: {e!s}") from e
 
     def download_file(self, remote_path: str, local_path: str) -> None:
         """Download a file from the remote server.
@@ -475,7 +484,7 @@ class SSHConnection:
             sftp.close()
         except Exception as e:
             self.reset_connection()
-            raise SSHConnectionError(f"File download failed for {params.connection_id}: {e!s}")
+            raise SSHConnectionError(f"File download failed for {params.connection_id}: {e!s}") from e
 
     def list_directory(self, remote_path: str) -> list[str]:
         """List contents of a directory on the remote server.
@@ -498,7 +507,7 @@ class SSHConnection:
             return files
         except Exception as e:
             self.reset_connection()
-            raise SSHConnectionError(f"Directory listing failed on {params.connection_id}: {e!s}")
+            raise SSHConnectionError(f"Directory listing failed on {params.connection_id}: {e!s}") from e
 
     def __enter__(self):
         """Enter context manager.
@@ -518,215 +527,4 @@ class SSHConnection:
             exc_tb: Exception traceback
 
         """
-        self.clear_connection_pool()
-
-
-class SSHConnectionPool:
-    """Manages multiple SSH connections.
-
-    This class maintains a pool of SSH connections, limits the total number
-    of connections, and provides methods to create, retrieve, and close connections.
-    """
-
-    def __init__(self, max_connections: int = 5):
-        """Initialize connection pool.
-
-        Args:
-            max_connections: Maximum number of concurrent connections
-
-        """
-        self.connections = {}
-        self.max_connections = max_connections
-        # Store connection parameters for reconnection
-        self.connection_params = {}
-
-    def has_connection(self, connection_id: str) -> bool:
-        """Check if a connection exists in the pool.
-
-        Args:
-            connection_id: Unique identifier for the connection
-
-        Returns:
-            bool: True if the connection exists in the pool
-
-        """
-        return connection_id in self.connections
-
-    def get_connection(self, connection_id: str) -> SSHConnection:
-        """Get an existing connection from the pool.
-
-        Args:
-            connection_id: Unique identifier for the connection
-
-        Returns:
-            SSHConnection: The connection object
-
-        Raises:
-            SSHConnectionError: If the connection ID is not found
-
-        """
-        if connection_id not in self.connections:
-            # If we have params stored but no connection, recreate it
-            params = self._get_connection_params(connection_id)
-            if params:
-                return self.create_connection(params)
-            raise SSHConnectionError(f"Connection ID '{connection_id}' not found")
-        return self.connections[connection_id]
-
-    def close_idle_connections(self) -> int:
-        """Close any idle connections in the pool.
-
-        Returns:
-            int: Number of closed connections
-
-        """
-        closed_count = 0
-        for conn_id, conn in list(self.connections.items()):
-            if not conn.is_connected():
-                self.close_connection(conn_id)
-                closed_count += 1
-        return closed_count
-
-    def create_connection(self, params: SSHConnectionParams) -> SSHConnection:
-        """Create a new connection and add it to the pool.
-
-        Args:
-            params: SSH connection parameters
-
-        Returns:
-            SSHConnection: The newly created SSH connection
-
-        Raises:
-            SSHConnectionError: If the connection limit is reached
-            ValueError: If the connection parameters are invalid
-
-        """
-        # Close any idle connections first
-        self.close_idle_connections()
-
-        # Check if we're at the connection limit
-        if len(self.connections) >= self.max_connections:
-            raise SSHConnectionError(f"Connection limit reached ({self.max_connections})")
-
-        try:
-            # Store connection parameters for reconnection
-            stored_params = self._set_connection_params(params)
-
-            # Create new connection using the parameters object
-            connection = SSHConnection(stored_params)
-
-            self.connections[params.connection_id] = connection
-
-            return connection
-        except ValueError as e:
-            # Remove stored parameters on validation error
-            self._remove_connection_params(params.connection_id)
-            raise ValueError(
-                f"Invalid connection parameters for '{params.connection_id}': {e!s}"
-            )
-
-    def close_connection(self, connection_id: str) -> SSHConnection | None:
-        """Close and remove a connection from the pool.
-
-        Args:
-            connection_id: Unique identifier for the connection
-
-        """
-        if connection_id not in self.connections:
-            return None
-
-        connection = self.connections[connection_id]
-        connection.disconnect()
-
-        del self.connections[connection_id]
-
-        return connection
-
-    def close_and_remove_connection(self, connection_id: str) -> None:
-        """Close a connection and remove it completely from the pool including parameters.
-
-        Args:
-            connection_id: Unique identifier for the connection
-
-        """
-        self.close_connection(connection_id)
-
-        # Also remove stored parameters
-        self._remove_connection_params(connection_id)
-
-    def close_all_connections(self) -> None:
-        """Close all active connections in the pool."""
-        for connection_id in list(self.connections.keys()):
-            self.close_connection(connection_id)
-
-    def clear_connection_pool(self) -> None:
-        """Close all connections and clear all stored parameters."""
-        self.close_all_connections()
-        self.connection_params.clear()
-
-    def get_connections(self):
-        """Get all connections in the pool.
-
-        Returns:
-            dict: Dictionary of all connections
-
-        """
-        return self.connections
-
-    def __enter__(self):
-        """Enter context manager.
-
-        Returns:
-            SSHConnectionPool: The connection pool instance
-
-        """
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit context manager and close all connections.
-
-        Args:
-            exc_type: Exception type
-            exc_val: Exception value
-            exc_tb: Exception traceback
-
-        """
-        self.clear_connection_pool()
-
-    def _get_connection_params(self, connection_id: str) -> SSHConnectionParams | None:
-        """Get stored connection parameters.
-
-        Args:
-            connection_id: Unique identifier for the connection
-
-        Returns:
-            SSHConnectionParams: The stored parameters or None if not found
-
-        """
-        return self.connection_params.get(connection_id)
-
-    def _set_connection_params(self, params: SSHConnectionParams) -> SSHConnectionParams:
-        """Store connection parameters.
-
-        Args:
-            params: SSH connection parameters
-
-        Returns:
-            SSHConnectionParams: The stored parameters
-
-        Raises:
-            ValueError: If the parameters are invalid
-
-        """
-        self.connection_params[params.connection_id] = params
-        return params
-
-    def _remove_connection_params(self, connection_id: str) -> None:
-        """Remove stored connection parameters.
-
-        Args:
-            connection_id: Unique identifier for the connection
-
-        """
-        if connection_id in self.connection_params:
-            del self.connection_params[connection_id]
+        self.disconnect()
