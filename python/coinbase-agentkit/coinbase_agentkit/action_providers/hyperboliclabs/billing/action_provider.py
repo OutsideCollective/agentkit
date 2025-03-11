@@ -9,11 +9,8 @@ from typing import Any
 from coinbase_agentkit.network import Network
 
 from ...action_decorator import create_action
-from ...action_provider import ActionProvider
+from ..action_provider import ActionProvider
 from ..marketplace.service import MarketplaceService
-from ..utils import (
-    get_api_key,
-)
 from .schemas import (
     GetCurrentBalanceSchema,
     GetPurchaseHistorySchema,
@@ -48,16 +45,7 @@ class BillingActionProvider(ActionProvider):
             ValueError: If API key is not provided and not found in environment.
 
         """
-        super().__init__("hyperbolic_billing", [])
-
-        try:
-            self.api_key = api_key or get_api_key()
-        except ValueError as e:
-            raise ValueError(
-                f"{e!s} Please provide it directly "
-                "or set the HYPERBOLIC_API_KEY environment variable."
-            ) from e
-
+        super().__init__("hyperbolic_billing", [], api_key=api_key)
         self.billing = BillingService(self.api_key)
         self.marketplace = MarketplaceService(self.api_key)
 

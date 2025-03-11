@@ -49,17 +49,17 @@ class HyperbolicActionProvider(ActionProvider):
 
         """
         try:
-            self.api_key = api_key or get_api_key()
+            api_key = api_key or get_api_key()
         except ValueError as e:
             raise ValueError(
                 f"{e!s} Please provide it directly "
                 "or set the HYPERBOLIC_API_KEY environment variable."
             ) from e
 
-        self.marketplace_provider = MarketplaceActionProvider(api_key=self.api_key)
-        self.billing_provider = BillingActionProvider(api_key=self.api_key)
-        self.ai_provider = AIActionProvider(api_key=self.api_key)
-        self.settings_provider = SettingsActionProvider(api_key=self.api_key)
+        self.marketplace_provider = MarketplaceActionProvider(api_key)
+        self.billing_provider = BillingActionProvider(api_key)
+        self.ai_provider = AIActionProvider(api_key)
+        self.settings_provider = SettingsActionProvider(api_key)
 
         super().__init__(
             "hyperbolic",

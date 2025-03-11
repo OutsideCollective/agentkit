@@ -8,8 +8,7 @@ from typing import Any
 
 from ....network import Network
 from ...action_decorator import create_action
-from ...action_provider import ActionProvider
-from ..utils import get_api_key
+from ..action_provider import ActionProvider
 from .models import WalletLinkRequest
 from .schemas import LinkWalletAddressSchema
 from .service import SettingsService
@@ -38,16 +37,7 @@ class SettingsActionProvider(ActionProvider):
             ValueError: If API key is not provided and not found in environment.
 
         """
-        super().__init__("hyperbolic_settings", [])
-
-        try:
-            self.api_key = api_key or get_api_key()
-        except ValueError as e:
-            raise ValueError(
-                f"{e!s} Please provide it directly "
-                "or set the HYPERBOLIC_API_KEY environment variable."
-            ) from e
-
+        super().__init__("hyperbolic_settings", [], api_key=api_key)
         self.settings = SettingsService(self.api_key)
 
     @create_action(
@@ -76,9 +66,9 @@ A failure response will return an error message like:
     Error linking wallet address: Invalid wallet address format
     Error linking wallet address: API request failed
 
-Notes:
-- Authorization key is required
-- The wallet address must be a valid Ethereum address
+Important Notes:
+- The wallet address must be a valid 0x formatted Ethereum address
+- If the user does not provide an address, you can run the wallet details action to get the address if available
 - After linking, you can send USDC, USDT, or DAI on Base network
 """,
         schema=LinkWalletAddressSchema,

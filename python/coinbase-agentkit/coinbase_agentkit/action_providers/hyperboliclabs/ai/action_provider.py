@@ -10,8 +10,7 @@ from typing import Any
 from coinbase_agentkit.network import Network
 
 from ...action_decorator import create_action
-from ...action_provider import ActionProvider
-from ..utils import get_api_key
+from ..action_provider import ActionProvider
 from .models import (
     AudioGenerationRequest,
     ChatCompletionRequest,
@@ -42,16 +41,7 @@ class AIActionProvider(ActionProvider):
             api_key: The API key for authentication.
 
         """
-        super().__init__("hyperbolic_ai", [])
-
-        try:
-            self.api_key = api_key or get_api_key()
-        except ValueError as e:
-            raise ValueError(
-                f"{e!s} Please provide it directly "
-                "or set the HYPERBOLIC_API_KEY environment variable."
-            ) from e
-
+        super().__init__("hyperbolic_ai", [], api_key=api_key)
         self.ai_service = AIService(api_key=self.api_key)
 
     @create_action(

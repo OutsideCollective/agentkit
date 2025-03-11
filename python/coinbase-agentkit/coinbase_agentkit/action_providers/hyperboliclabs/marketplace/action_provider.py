@@ -8,7 +8,7 @@ from typing import Any
 
 from ....network import Network
 from ...action_decorator import create_action
-from ...action_provider import ActionProvider
+from ..action_provider import ActionProvider
 from .schemas import (
     GetAvailableGpusByTypeSchema,
     GetAvailableGpusSchema,
@@ -27,7 +27,6 @@ from .utils import (
     format_gpu_types,
     format_rent_compute_response,
     format_terminate_compute_response,
-    get_api_key,
     ssh_manager,
 )
 
@@ -54,16 +53,7 @@ class MarketplaceActionProvider(ActionProvider):
             ValueError: If API key is not provided and not found in environment.
 
         """
-        super().__init__("hyperbolic_marketplace", [])
-
-        try:
-            self.api_key = api_key or get_api_key()
-        except ValueError as e:
-            raise ValueError(
-                f"{e!s} Please provide it directly "
-                "or set the HYPERBOLIC_API_KEY environment variable."
-            ) from e
-
+        super().__init__("hyperbolic_marketplace", [], api_key=api_key)
         self.marketplace = MarketplaceService(self.api_key)
 
     @create_action(
@@ -322,6 +312,7 @@ A failure response will return an error message like:
     Error renting compute: Node not available
 
 Important notes:
+- If the user does not provide the required inputs, but does provide a gpu type, you can use get_available_gpus_types and get_available_gpus_by_type to get valid inputs
 - Use get_available_gpus first to get valid cluster and node names
 - Do not ask for a duration, it is not needed
 - After renting, you can:
@@ -406,37 +397,37 @@ Important notes:
         except Exception as e:
             return f"Error terminating compute: {e}"
 
-    @create_action(
-        name="ssh_connect",
-        description="""
-This tool will establish an SSH connection to a remote server.
+    #     @create_action(
+    #         name="ssh_connect",
+    #         description="""
+    # This tool will establish an SSH connection to a remote server.
 
-Required inputs:
-- host: Hostname or IP address of the remote server
-- username: SSH username for authentication
+    # Required inputs:
+    # - host: Hostname or IP address of the remote server
+    # - username: SSH username for authentication
 
-Optional inputs:
-- password: SSH password for authentication (if not using key)
-- private_key_path: Path to private key file (uses SSH_PRIVATE_KEY_PATH env var if not provided)
-- port: SSH port number (default: 22)
+    # Optional inputs:
+    # - password: SSH password for authentication (if not using key)
+    # - private_key_path: Path to private key file (uses SSH_PRIVATE_KEY_PATH env var if not provided)
+    # - port: SSH port number (default: 22)
 
-Example successful response:
-    Successfully connected to host.example.com as username
+    # Example successful response:
+    #     Successfully connected to host.example.com as username
 
-A failure response will return an error message like:
-    SSH Connection Error: Authentication failed
-    SSH Connection Error: Connection refused
-    SSH Key Error: Key file not found at /path/to/key
+    # A failure response will return an error message like:
+    #     SSH Connection Error: Authentication failed
+    #     SSH Connection Error: Connection refused
+    #     SSH Key Error: Key file not found at /path/to/key
 
-Important notes:
-- After connecting, use remote_shell to execute commands
-- Use 'ssh_status' command to check connection status
-- Connection remains active until explicitly disconnected
-- Default key path is ~/.ssh/id_rsa if not specified
-- Either password or key authentication must be provided
-""",
-        schema=SSHAccessSchema,
-    )
+    # Important notes:
+    # - After connecting, use remote_shell to execute commands
+    # - Use 'ssh_status' command to check connection status
+    # - Connection remains active until explicitly disconnected
+    # - Default key path is ~/.ssh/id_rsa if not specified
+    # - Either password or key authentication must be provided
+    # """,
+    #         schema=SSHAccessSchema,
+    #     )
     def ssh_connect(self, args: dict[str, Any]) -> str:
         """Establish SSH connection to remote server.
 
@@ -467,31 +458,31 @@ Important notes:
         except Exception as e:
             return f"SSH Connection Error: {e}"
 
-    @create_action(
-        name="remote_shell",
-        description="""
-This tool will execute shell commands on a remote server via SSH.
+    #     @create_action(
+    #         name="remote_shell",
+    #         description="""
+    # This tool will execute shell commands on a remote server via SSH.
 
-Required inputs:
-- command: The shell command to execute on the remote server
+    # Required inputs:
+    # - command: The shell command to execute on the remote server
 
-Example successful response:
-    Command output from remote server
+    # Example successful response:
+    #     Command output from remote server
 
-A failure response will return an error message like:
-    Error: No active SSH connection. Please connect first.
-    Error: Command execution failed.
-    Error: SSH connection lost.
+    # A failure response will return an error message like:
+    #     Error: No active SSH connection. Please connect first.
+    #     Error: Command execution failed.
+    #     Error: SSH connection lost.
 
-Important notes:
-- Requires an active SSH connection (use ssh_connect first)
-- Use 'ssh_status' to check current connection status
-- Commands are executed in the connected SSH session
-- Returns command output as a string
-- You can install any packages you need on the remote server
-""",
-        schema=RemoteShellSchema,
-    )
+    # Important notes:
+    # - Requires an active SSH connection (use ssh_connect first)
+    # - Use 'ssh_status' to check current connection status
+    # - Commands are executed in the connected SSH session
+    # - Returns command output as a string
+    # - You can install any packages you need on the remote server
+    # """,
+    #         schema=RemoteShellSchema,
+    #     )
     def remote_shell(self, args: dict[str, Any]) -> str:
         """Execute a command on the remote server.
 

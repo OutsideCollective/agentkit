@@ -1,0 +1,1 @@
+scp requires full local and remote paths
