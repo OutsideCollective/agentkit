@@ -547,7 +547,7 @@ Important notes:
             key = validated_args.key
             key_type = validated_args.key_type
             known_hosts_file = os.path.expanduser(validated_args.known_hosts_file)
-            
+
             host_entry = host
             entry = f"{host_entry} {key_type} {key}\n"
 

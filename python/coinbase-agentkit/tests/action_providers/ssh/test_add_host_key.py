@@ -171,15 +171,15 @@ def test_add_host_key_file_error(ssh_provider):
     # Mock the necessary functions using context managers
     with (
         mock.patch("os.path.exists") as mock_exists,
-        mock.patch("os.makedirs") as mock_makedirs,
-        mock.patch("builtins.open") as mock_open
+        mock.patch("os.makedirs"),
+        mock.patch("builtins.open") as mock_open,
     ):
         # Mock os.path.exists to return True
         mock_exists.return_value = True
-        
+
         # Mock open to raise an OSError
         mock_open.side_effect = OSError("Permission denied")
-        
+
         # Call the method
         result = ssh_provider.ssh_add_host_key(
             {

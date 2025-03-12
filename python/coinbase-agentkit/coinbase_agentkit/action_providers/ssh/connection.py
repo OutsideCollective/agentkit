@@ -60,7 +60,7 @@ class CapturingRejectPolicy(paramiko.MissingHostKeyPolicy):
         """
         key_type = key.get_name()
         key_data = key.get_base64()
-        
+
         message = (
             f"Host key verification failed for {hostname}. Server sent:\n"
             f"  {key_type} {key_data}\n\n"
@@ -69,7 +69,7 @@ class CapturingRejectPolicy(paramiko.MissingHostKeyPolicy):
             f"  key: {key_data}\n"
             f"  key_type: {key_type}"
         )
-        
+
         raise UnknownHostKeyError(message)
 
 
@@ -227,9 +227,7 @@ class SSHConnection:
             self.reset_connection()
             raise
 
-    def _load_key_from_string(
-        self, key_string: str, password: str | None = None
-    ) -> paramiko.PKey:
+    def _load_key_from_string(self, key_string: str, password: str | None = None) -> paramiko.PKey:
         """Load a private key from a string.
 
         This method attempts to load the key as different formats (RSA, DSS, ECDSA, Ed25519)
@@ -247,19 +245,19 @@ class SSHConnection:
 
         """
         key_file = io.StringIO(key_string)
-        
+
         # Define key classes to try in order
         key_classes = [
             paramiko.RSAKey,  # Try RSA first for test compatibility
             paramiko.DSSKey,
             paramiko.ECDSAKey,
-            paramiko.Ed25519Key
+            paramiko.Ed25519Key,
         ]
-        
+
         # Password required errors should be surfaced specifically
         password_required = False
         last_error = None
-        
+
         for key_class in key_classes:
             # Reset file pointer for each attempt
             key_file.seek(0)
@@ -275,15 +273,15 @@ class SSHConnection:
             except Exception as e:
                 # For other errors, raise immediately
                 raise SSHKeyError(f"Failed to load key from string: {e!s}") from e
-                
+
         # If we needed a password, raise that specific error
         if password_required:
             raise SSHKeyError("Password-protected key provided but no password was given")
-            
+
         # Otherwise raise with the last error we got
         if last_error:
             raise SSHKeyError(f"Failed to load key from string: {last_error!s}")
-            
+
         # If we somehow get here, no supported key format was found
         raise SSHKeyError("Key format not supported or invalid key data")
 
@@ -411,13 +409,13 @@ class SSHConnection:
             paramiko.RSAKey,  # Try RSA first for test compatibility
             paramiko.DSSKey,
             paramiko.ECDSAKey,
-            paramiko.Ed25519Key
+            paramiko.Ed25519Key,
         ]
-        
+
         # Password required errors should be surfaced specifically
         password_required = False
         last_error = None
-        
+
         for key_class in key_classes:
             try:
                 return key_class.from_private_key_file(key_path, password=password)
@@ -434,15 +432,15 @@ class SSHConnection:
             except Exception as e:
                 # For other errors, raise immediately
                 raise SSHKeyError(f"Failed to load key file {key_path}: {e!s}") from e
-                
+
         # If we needed a password, raise that specific error
         if password_required:
             raise SSHKeyError("Password-protected key file requires a password")
-            
+
         # Otherwise raise with the last error we got
         if last_error:
             raise SSHKeyError(f"Invalid key format in {key_path}: {last_error!s}")
-            
+
         # If we somehow get here, no supported key format was found
         raise SSHKeyError(f"Key format not supported or invalid key file {key_path}")
 

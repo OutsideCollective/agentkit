@@ -99,7 +99,7 @@ def test_connect_with_key(connection_params):
     # Setup mocks
     with (
         mock.patch("paramiko.SSHClient") as mock_ssh_client_class,
-        mock.patch("paramiko.RSAKey") as mock_rsa_key
+        mock.patch("paramiko.RSAKey") as mock_rsa_key,
     ):
         mock_client = mock_ssh_client_class.return_value
         mock_stdout = mock.Mock()
@@ -144,7 +144,7 @@ def test_connect_with_key_path():
         mock.patch("paramiko.SSHClient") as mock_ssh_client_class,
         mock.patch("paramiko.RSAKey") as mock_rsa_key,
         mock.patch("os.path.exists") as mock_exists,
-        mock.patch("os.path.expanduser") as mock_expanduser
+        mock.patch("os.path.expanduser") as mock_expanduser,
     ):
         mock_client = mock_ssh_client_class.return_value
         mock_stdout = mock.Mock()
@@ -191,7 +191,7 @@ def test_connect_with_nonexistent_key_file():
     # Mock path operations
     with (
         mock.patch("os.path.exists") as mock_exists,
-        mock.patch("os.path.expanduser") as mock_expanduser
+        mock.patch("os.path.expanduser") as mock_expanduser,
     ):
         mock_expanduser.return_value = "/expanded/path/to/key"
         mock_exists.return_value = False
