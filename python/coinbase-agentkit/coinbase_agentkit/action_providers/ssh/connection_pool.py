@@ -57,6 +57,7 @@ class SSHConnectionPool:
             # If we have params stored but no connection, recreate it
             params = self._get_connection_params(connection_id)
             if params:
+                # TODO: check for available slots
                 return self.create_connection(params)
             raise SSHConnectionError(f"Connection ID '{connection_id}' not found")
         return self.connections[connection_id]
@@ -109,7 +110,9 @@ class SSHConnectionPool:
         except ValueError as e:
             # Remove stored parameters on validation error
             self._remove_connection_params(params.connection_id)
-            raise ValueError(f"Invalid connection parameters for '{params.connection_id}': {e!s}") from e
+            raise ValueError(
+                f"Invalid connection parameters for '{params.connection_id}': {e!s}"
+            ) from e
 
     def close_connection(self, connection_id: str) -> SSHConnection | None:
         """Close and remove a connection from the pool.

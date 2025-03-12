@@ -19,28 +19,28 @@ MOCK_CONNECTION_INFO = "Connection Info Mock"
 def mock_ssh_client():
     """Create a mock SSH client with standard behaviors."""
     mock_client = mock.Mock(spec=paramiko.SSHClient)
-    
+
     # Set up common mock behaviors
     mock_stdout = mock.Mock()
     mock_stdout.read.return_value = b"Connection successful"
     mock_stdout.channel = mock.Mock()
     mock_stdout.channel.recv_exit_status.return_value = 0
-    
+
     mock_stderr = mock.Mock()
     mock_stderr.read.return_value = b""
-    
+
     # Store common mocks for test customization
     mock_client.mock_stdout = mock_stdout
     mock_client.mock_stderr = mock_stderr
-    
+
     # Configure default exec_command behavior
     mock_client.exec_command.return_value = (None, mock_stdout, mock_stderr)
-    
+
     # Configure default transport behavior
     mock_transport = mock.Mock()
     mock_transport.is_active.return_value = True
     mock_client.get_transport.return_value = mock_transport
-    
+
     return mock_client
 
 
@@ -91,13 +91,14 @@ def ssh_connection(mock_ssh_client, connection_params):
     conn = SSHConnection(connection_params)
     conn.ssh_client = mock_ssh_client
     conn.connected = False  # Start disconnected
-    
+
     # Add helper to mock is_connected easily
     def set_connected(connected=True):
         conn.connected = connected
         return mock.patch.object(conn, "is_connected", return_value=connected)
+
     conn.set_connected = set_connected
-    
+
     return conn
 
 

@@ -47,4 +47,4 @@ def test_get_current_balance_api_error(provider):
 
     # Call the method
     result = provider.get_current_balance({})
-    assert "Error retrieving balance information: API Error" in result
+    assert "Error: Balance retrieval: API Error" in result

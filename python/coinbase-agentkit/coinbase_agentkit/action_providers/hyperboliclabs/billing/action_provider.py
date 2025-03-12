@@ -56,19 +56,15 @@ This tool retrieves your current Hyperbolic platform credit balance.
 
 It does not take any inputs.
 
-A successful response will show:
-- Available Hyperbolic platform credits in your account (in USD)
-- Recent credit purchase history with dates and amounts
-
 Example successful response:
     Your current Hyperbolic platform balance is $150.00.
     Purchase History:
     - $100.00 on January 15, 2024
     - $50.00 on December 30, 2023
 
-A failure response will return an error message like:
-    Error retrieving balance information: API request failed
-    Error retrieving balance information: Invalid authentication credentials
+Example error response:
+    Error: API request failed
+    Error: Invalid authentication credentials
 
 Important notes:
 - This shows platform credits only, NOT cryptocurrency wallet balances
@@ -78,13 +74,13 @@ Important notes:
         schema=GetCurrentBalanceSchema,
     )
     def get_current_balance(self, args: dict[str, Any]) -> str:
-        """Get current balance and purchase history from the account.
+        """Retrieve current balance and purchase history from the account.
 
         Args:
-            args (dict[str, Any]): Empty dictionary, no arguments needed.
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: A message containing the current balance and purchase history or error details.
+            str: A message containing the action response or error details.
 
         """
         try:
@@ -98,7 +94,7 @@ Important notes:
             return "\n".join(output)
 
         except Exception as e:
-            return f"Error retrieving balance information: {e}"
+            return f"Error: Balance retrieval: {e!s}"
 
     @create_action(
         name="get_spend_history",
@@ -107,12 +103,7 @@ This tool retrieves your GPU rental spending history from Hyperbolic platform.
 
 It does not take any inputs.
 
-A successful response will show:
-- List of instances rented with details (GPU model, count, duration, cost)
-- Statistics per GPU type (rentals, time, cost)
-- Overall total spending
-
-Example response:
+Example successful response:
     === GPU Rental Spending Analysis ===
 
     Instance Rentals:
@@ -129,10 +120,10 @@ Example response:
 
     Total Spending: $25.00
 
-A failure response will return an error message like:
-    Error retrieving spend history: API request failed
+Example error response:
+    Error: API request failed
 
-Notes:
+Important notes:
 - All costs are in USD
 - Duration is in seconds
 - History includes all past rentals
@@ -140,30 +131,27 @@ Notes:
         schema=GetSpendHistorySchema,
     )
     def get_spend_history(self, args: dict[str, Any]) -> str:
-        """Get GPU rental spending history.
+        """Retrieve GPU rental spending history from the platform.
 
         Args:
-            args (dict[str, Any]): Empty dictionary, no arguments needed.
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: A message containing the spend history or error details.
+            str: A message containing the action response or error details.
 
         """
         try:
-            # Validate arguments using schema
             GetSpendHistorySchema(**args)
 
-            # Get instance history from marketplace service
             response = self.marketplace.get_instance_history()
 
             if not response.instance_history:
                 return "No rental history found."
 
-            # Format the response
             return format_spend_history(response)
 
         except Exception as e:
-            return f"Error retrieving spend history: {e}"
+            return f"Error: Spend history retrieval: {e!s}"
 
     @create_action(
         name="get_purchase_history",
@@ -172,21 +160,16 @@ This tool retrieves your purchase history of Hyperbolic platform credits.
 
 It does not take any inputs.
 
-A successful response will show:
-- Your most recent credit purchases with dates and amounts
-- All amounts are in USD
-- Purchases are listed from most recent to oldest
-
 Example successful response:
     Purchase History (showing 5 most recent):
     - $100.00 on January 15, 2024
     - $50.00 on December 30, 2023
     - $75.00 on November 20, 2023
 
-A failure response will return an error message like:
-    Error retrieving purchase history: API request failed
-    Error retrieving purchase history: Invalid authentication credentials
-    No previous purchases found
+Example error response:
+    Error: API request failed
+    Error: Invalid authentication credentials
+    Error: No previous purchases found
 
 Important notes:
 - This shows platform credit purchases only
@@ -196,13 +179,13 @@ Important notes:
         schema=GetPurchaseHistorySchema,
     )
     def get_purchase_history(self, args: dict[str, Any]) -> str:
-        """Get purchase history from the account.
+        """Retrieve the purchase history of platform credits.
 
         Args:
-            args (dict[str, Any]): Empty dictionary, no arguments needed.
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: A message containing the purchase history or error details.
+            str: A message containing the action response or error details.
 
         """
         try:
@@ -212,7 +195,7 @@ Important notes:
             return format_purchase_history(history_response)
 
         except Exception as e:
-            return f"Error retrieving purchase history: {e}"
+            return f"Error: Purchase history retrieval: {e!s}"
 
     def supports_network(self, network: Network) -> bool:
         """Check if network is supported by Hyperbolic billing actions.

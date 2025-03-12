@@ -133,4 +133,4 @@ def test_get_available_gpus_api_error(provider):
         ),
     ):
         result = provider.get_available_gpus({})
-        assert "Error retrieving available GPUs: API Error" in result
+        assert "Error: GPU retrieval: API Error" in result

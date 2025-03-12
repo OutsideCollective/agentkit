@@ -51,6 +51,5 @@ def test_ssh_status_not_found(ssh_provider):
     )
 
     # Verify
-    assert "SSH Connection Error" in result
-    assert error_message in result
+    assert "Error: Connection not found:" in result
     mock_pool.get_connection.assert_called_once_with("test-conn")

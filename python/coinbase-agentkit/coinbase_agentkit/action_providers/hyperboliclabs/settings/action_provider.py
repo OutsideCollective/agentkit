@@ -49,10 +49,7 @@ Required inputs:
 - address: The wallet address to link to your Hyperbolic account
 
 Example successful response:
-    {
-      "status": "success",
-      "message": "Wallet address linked successfully"
-    }
+    Wallet address linked successfully.
 
     Next Steps:
     1. Your wallet has been successfully linked
@@ -62,11 +59,11 @@ Example successful response:
        - DAI
     3. Send to this Hyperbolic address: 0xd3cB24E0Ba20865C530831C85Bd6EbC25f6f3B60
 
-A failure response will return an error message like:
-    Error linking wallet address: Invalid wallet address format
-    Error linking wallet address: API request failed
+Example error response:
+    Error: Invalid wallet address format
+    Error: API request failed
 
-Important Notes:
+Important notes:
 - The wallet address must be a valid 0x formatted Ethereum address
 - If the user does not provide an address, you can run the wallet details action to get the address if available
 - After linking, you can send USDC, USDT, or DAI on Base network
@@ -74,28 +71,25 @@ Important Notes:
         schema=LinkWalletAddressSchema,
     )
     def link_wallet_address(self, args: dict[str, Any]) -> str:
-        """Link a wallet address to your Hyperbolic account.
+        """Links a wallet address to your Hyperbolic account.
 
         Args:
-            args (dict[str, Any]): Dictionary containing:
-                - address: The wallet address to link.
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: A message containing the linking response and next steps.
+            str: A message containing the action response or error details.
 
         """
         validated_args = LinkWalletAddressSchema(**args)
 
         try:
-            # Link the wallet address
             request = WalletLinkRequest(address=validated_args.address)
             response = self.settings.link_wallet(request)
 
-            # Format the response with next steps
             return format_wallet_link_response(response)
 
         except Exception as e:
-            return f"Error linking wallet address: {e}"
+            return f"Error: Wallet linking: {e!s}"
 
     def supports_network(self, _: Network) -> bool:
         """Check if network is supported by Hyperbolic settings actions.

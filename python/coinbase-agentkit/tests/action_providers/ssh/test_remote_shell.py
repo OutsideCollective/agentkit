@@ -75,7 +75,7 @@ def test_remote_shell_not_connected(ssh_provider):
     )
 
     # Verify
-    assert "Error: Connection 'test-conn' is not currently active" in result
+    assert "Error: Connection state:" in result
     mock_pool.get_connection.assert_called_once_with("test-conn")
     mock_connection.is_connected.assert_called_once()
     # execute should not be called on an inactive connection
@@ -102,7 +102,37 @@ def test_remote_shell_execution_error(ssh_provider):
     )
 
     # Verify
-    assert "Error: SSH connection lost during execution" in result
+    assert "Error: Connection:" in result
     assert "Command execution failed" in result
     mock_pool.get_connection.assert_called_once_with("test-conn")
     mock_connection.execute.assert_called_once_with("ls -la", timeout=30, ignore_stderr=False)
+
+
+def test_remote_shell_missing_command(ssh_provider):
+    """Test remote shell with missing command parameter."""
+    # Call the method without providing a command
+    result = ssh_provider.remote_shell(
+        {
+            "connection_id": "test-conn",
+            # Missing command parameter
+        }
+    )
+
+    # Verify validation error is returned in the result
+    assert "Error: Invalid parameters:" in result
+    assert "Field required" in result or "command" in result
+
+
+def test_remote_shell_empty_command(ssh_provider):
+    """Test remote shell with empty command."""
+    # Call the method with an empty command
+    result = ssh_provider.remote_shell(
+        {
+            "connection_id": "test-conn",
+            "command": "",  # Empty command
+        }
+    )
+
+    # Verify validation error is returned in the result
+    assert "Error: Invalid parameters:" in result
+    assert "min_length" in result or "at least" in result or "length" in result

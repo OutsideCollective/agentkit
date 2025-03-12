@@ -19,11 +19,12 @@ from ..action_decorator import create_action
 from ..action_provider import ActionProvider
 
 # Import SSH implementation classes - Updated to use the new module structure
-from .connection import SSHConnectionError, SSHKeyError
+from .connection import SSHConnectionError, SSHKeyError, UnknownHostKeyError
 from .connection_pool import SSHConnectionPool
 
 # Import action schemas
 from .schemas import (
+    AddHostKeySchema,
     ConnectionStatusSchema,
     DisconnectSchema,
     FileDownloadSchema,
@@ -51,32 +52,34 @@ class SshActionProvider(ActionProvider):
         description="""
 This tool establishes an SSH connection to a remote server.
 
-Required:
+Required inputs:
 - host: Hostname or IP address
 - username: SSH username
 
-Optional:
-- connection_id: Unique identifier (auto-generated if omitted)
+Optional inputs:
+- connection_id: Unique ID (auto-generated if omitted)
 - password: SSH password
-- private_key: SSH private key as a string
-- private_key_path: Path to private key file
+- private_key: SSH private key as string
+- private_key_path: Path to key file
 - port: SSH port (default: 22)
+- known_hosts_file: Path to custom known_hosts file
 
-Success example:
+Example successful response:
     Connection ID: my_server
     Successfully connected to host.example.com as username
 
-Failure examples:
+Example error response:
     SSH Connection Error: Authentication failed
     SSH Connection Error: Connection refused
-    SSH Key Error: Key file not found at /path/to/key
+    SSH Key Error: Key file not found
+    Host key verification failed: Use ssh_add_host_key
 
-Notes:
+Important notes:
 - Maintains multiple simultaneous connections
-- Use remote_shell to execute commands once connected
-- Connection remains active until disconnected
+- Use remote_shell to execute commands after connecting
 - Either password or key authentication required
-- Default key path is ~/.ssh/id_rsa if not specified
+- Default key path is ~/.ssh/id_rsa
+- If host key verification fails, use ssh_add_host_key
 """,
         schema=SSHConnectionSchema,
     )
@@ -84,16 +87,10 @@ Notes:
         """Establish SSH connection to remote server.
 
         Args:
-            args (dict[str, Any]): Dictionary containing:
-                - connection_id: Optional unique identifier for this connection
-                - host: Remote server hostname/IP
-                - username: SSH username
-                - password: Optional SSH password
-                - private_key_path: Optional key file path
-                - port: Optional port number
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: Connection status message.
+            str: A message containing the action response or error details.
 
         """
         try:
@@ -116,17 +113,19 @@ Notes:
 
             return "\n".join(output)
 
+        except UnknownHostKeyError as e:
+            return f"Error: Host verification: {e!s}"
         except SSHConnectionError as e:
-            return f"SSH Connection Error: {e!s}"
+            return f"Error: Connection: {e!s}"
         except SSHKeyError as e:
-            return f"SSH Key Error: {e!s}"
+            return f"Error: SSH key issue: {e!s}"
         except ValidationError as e:
-            return f"Invalid input parameters: {e!s}"
+            return f"Error: Invalid input parameters: {e!s}"
 
     @create_action(
         name="remote_shell",
         description="""
-This tool will execute shell commands on a remote server via SSH.
+This tool executes shell commands on a remote server via SSH.
 
 Required inputs:
 - connection_id: Identifier for the SSH connection to use
@@ -139,7 +138,7 @@ Example successful response:
 
     Command output from remote server
 
-A failure response will return an error message like:
+Example error response:
     Error: No active SSH connection. Please connect first.
     Error: Invalid connection ID.
     Error: Command execution failed.
@@ -158,14 +157,10 @@ Important notes:
         """Execute a command on the remote server.
 
         Args:
-            args (dict[str, Any]): Dictionary containing:
-                - connection_id: Identifier for the SSH connection to use
-                - command: The shell command to execute
-                - ignore_stderr: If True, stderr output won't cause exceptions
-                - timeout: Command execution timeout in seconds
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: Command output or error message.
+            str: A message containing the action response or error details.
 
         """
         try:
@@ -175,30 +170,29 @@ Important notes:
             ignore_stderr = validated_args.ignore_stderr
             timeout = validated_args.timeout
 
-            # Check if connection exists
             if not self.connection_pool.has_connection(connection_id):
                 return f"Error: Connection ID '{connection_id}' not found. Use ssh_connect first."
 
             connection = self.connection_pool.get_connection(connection_id)
             if not connection.is_connected():
-                return f"Error: Connection '{connection_id}' is not currently active. Use ssh_connect to establish the connection."
+                return f"Error: Connection state: Connection '{connection_id}' is not currently active. Use ssh_connect to establish the connection."
 
             try:
                 result = connection.execute(command, timeout=timeout, ignore_stderr=ignore_stderr)
                 return f"Output from connection '{connection_id}':\n\n{result}"
 
             except SSHConnectionError as e:
-                return f"Error: SSH connection lost during execution: {e!s}. Please reconnect using ssh_connect."
+                return f"Error: Connection: {e!s}. Please reconnect using ssh_connect."
 
         except ValidationError as e:
-            return f"Invalid input parameters: {e}"
+            return f"Error: Invalid parameters: {e!s}"
         except Exception as e:
-            return f"Error executing remote command: {e}"
+            return f"Error: Command execution: {e!s}"
 
     @create_action(
         name="ssh_disconnect",
         description="""
-This tool will disconnect an active SSH connection.
+This tool disconnects an active SSH connection.
 
 Required inputs:
 - connection_id: Identifier for the SSH connection to disconnect
@@ -207,7 +201,7 @@ Example successful response:
     Connection ID: my_server
     Disconnected from host.example.com
 
-A failure response will return an error message like:
+Example error response:
     Error: Invalid connection ID.
 
 Important notes:
@@ -217,14 +211,13 @@ Important notes:
         schema=DisconnectSchema,
     )
     def ssh_disconnect(self, args: dict[str, Any]) -> str:
-        """Disconnect from SSH server.
+        """Disconnects from an active SSH session.
 
         Args:
-            args (dict[str, Any]): Dictionary containing:
-                - connection_id: Identifier for the SSH connection to disconnect
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: Disconnect status message.
+            str: A message containing the action response or error details.
 
         """
         try:
@@ -243,17 +236,17 @@ Important notes:
                 return result
 
             except SSHConnectionError as e:
-                return f"Error: {e!s}"
+                return f"Error: Connection: {e!s}"
 
         except ValidationError as e:
-            return f"Invalid input parameters: {e}"
+            return f"Error: Invalid parameters: {e!s}"
         except Exception as e:
-            return f"Error disconnecting: {e}"
+            return f"Error disconnecting: {e!s}"
 
     @create_action(
         name="ssh_status",
         description="""
-This tool will check the status of a specific SSH connection.
+This tool checks the status of a specific SSH connection.
 
 Required inputs:
 - connection_id: Identifier for the SSH connection to check
@@ -265,7 +258,7 @@ Example successful response:
     Username: admin
     Connected since: 2023-01-01 12:34:56
 
-A failure response will return an error message like:
+Example error response:
     Error: Invalid connection ID.
 
 Important notes:
@@ -275,14 +268,13 @@ Important notes:
         schema=ConnectionStatusSchema,
     )
     def ssh_status(self, args: dict[str, Any]) -> str:
-        """Get status of a specific SSH connection.
+        """Retrieve status of a specific SSH connection.
 
         Args:
-            args (dict[str, Any]): Dictionary containing:
-                - connection_id: Identifier for the SSH connection to check
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: Connection status information.
+            str: A message containing the action response or error details.
 
         """
         try:
@@ -292,14 +284,14 @@ Important notes:
             connection = self.connection_pool.get_connection(connection_id)
             return connection.get_connection_info()
         except SSHConnectionError as e:
-            return f"SSH Connection Error: {e!s}"
+            return f"Error: Connection not found: {e!s}"
         except ValidationError as e:
-            return f"Invalid input parameters: {e}"
+            return f"Error: Invalid input parameters: {e!s}"
 
     @create_action(
         name="list_connections",
         description="""
-This tool will list all active SSH connections.
+This tool lists all active SSH connections.
 
 It does not take any inputs.
 
@@ -314,7 +306,7 @@ Example successful response:
     Connection ID: server2
     Status: Not connected
 
-If no connections exist, it will return:
+Example error response:
     No active SSH connections
 """,
         schema=ListConnectionsSchema,
@@ -323,10 +315,10 @@ If no connections exist, it will return:
         """List all SSH connections in the pool.
 
         Args:
-            args (dict[str, Any]): Empty dictionary (no parameters)
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: List of all connections with their status.
+            str: A message containing the action response or error details.
 
         """
         try:
@@ -337,7 +329,6 @@ If no connections exist, it will return:
             result = [f"Active SSH Connections: {len(connections)}"]
 
             for conn_id, connection in connections.items():
-                # Add a blank line between connections for readability
                 if len(result) > 1:
                     result.append("")
 
@@ -353,12 +344,12 @@ If no connections exist, it will return:
             return "\n".join(result)
 
         except Exception as e:
-            return f"Error listing connections: {e}"
+            return f"Error: Connection listing: {e!s}"
 
     @create_action(
         name="ssh_upload",
         description="""
-This tool will upload a file to a remote server via SFTP.
+This tool uploads a file to a remote server via SFTP.
 
 Required inputs:
 - connection_id: Identifier for the SSH connection to use
@@ -370,7 +361,7 @@ Example successful response:
     Local file: /path/to/local/file.txt
     Remote destination: /path/on/server/file.txt
 
-A failure response will return an error message like:
+Example error response:
     Error: No active SSH connection. Please connect first.
     Error: Local file not found.
     Error: Permission denied on remote server.
@@ -388,13 +379,10 @@ Important notes:
         """Upload a file to the remote server.
 
         Args:
-            args (dict[str, Any]): Dictionary containing:
-                - connection_id: Identifier for the SSH connection to use
-                - local_path: Path to the local file to upload
-                - remote_path: Destination path on the remote server
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: Upload status message.
+            str: A message containing the action response or error details.
 
         """
         try:
@@ -403,28 +391,22 @@ Important notes:
             local_path = validated_args.local_path
             remote_path = validated_args.remote_path
 
-            # Check if connection exists
             if not self.connection_pool.has_connection(connection_id):
                 return f"Error: Connection ID '{connection_id}' not found. Use ssh_connect first."
 
-            # Check if local file exists
             if not os.path.exists(local_path):
                 return f"Error: Local file not found at {local_path}"
 
             if not os.path.isfile(local_path):
                 return f"Error: {local_path} is not a file"
 
-            # Get the connection
             connection = self.connection_pool.get_connection(connection_id)
 
-            # Check if connected
             if not connection.is_connected():
                 return f"Error: Connection '{connection_id}' is not currently active. Use ssh_connect to establish the connection."
 
-            # Upload the file
             connection.upload_file(local_path, remote_path)
 
-            # Success - provide upload confirmation
             return (
                 f"File upload successful:\n"
                 f"Local file: {local_path}\n"
@@ -432,20 +414,20 @@ Important notes:
             )
 
         except SSHConnectionError as e:
-            return f"Error: SSH connection lost during upload: {e!s}. Please reconnect using ssh_connect."
+            return f"Error: SSH connection: {e!s}"
         except paramiko.SFTPError as e:
-            return f"Error: SFTP error during upload: {e}"
+            return f"Error: SFTP operation: {e!s}"
         except OSError as e:
-            return f"Error: I/O error during upload: {e}"
+            return f"Error: I/O operation: {e!s}"
         except ValidationError as e:
-            return f"Invalid input parameters: {e}"
+            return f"Error: Invalid input parameters: {e!s}"
         except Exception as e:
-            return f"Error uploading file: {e}"
+            return f"Error: File upload: {e!s}"
 
     @create_action(
         name="ssh_download",
         description="""
-This tool will download a file from a remote server via SFTP.
+This tool downloads a file from a remote server via SFTP.
 
 Required inputs:
 - connection_id: Identifier for the SSH connection to use
@@ -457,7 +439,7 @@ Example successful response:
     Remote file: /path/on/server/file.txt
     Local destination: /path/to/local/file.txt
 
-A failure response will return an error message like:
+Example error response:
     Error: No active SSH connection. Please connect first.
     Error: Remote file not found.
     Error: Permission denied on local machine.
@@ -475,13 +457,10 @@ Important notes:
         """Download a file from the remote server.
 
         Args:
-            args (dict[str, Any]): Dictionary containing:
-                - connection_id: Identifier for the SSH connection to use
-                - remote_path: Path to the file on the remote server
-                - local_path: Destination path on the local machine
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: Download status message.
+            str: A message containing the action response or error details.
 
         """
         try:
@@ -490,29 +469,22 @@ Important notes:
             remote_path = validated_args.remote_path
             local_path = validated_args.local_path
 
-            # Check if connection exists
             if not self.connection_pool.has_connection(connection_id):
                 return f"Error: Connection ID '{connection_id}' not found. Use ssh_connect first."
 
-            # Get the connection
             connection = self.connection_pool.get_connection(connection_id)
 
-            # Check if connected
             if not connection.is_connected():
                 return f"Error: Connection '{connection_id}' is not currently active. Use ssh_connect to establish the connection."
 
-            # Expand user directory in local path if it exists
             local_path = os.path.expanduser(local_path)
 
-            # Ensure local directory exists
             local_dir = os.path.dirname(local_path)
             if local_dir and not os.path.exists(local_dir):
                 os.makedirs(local_dir)
 
-            # Download the file
             connection.download_file(remote_path, local_path)
 
-            # Success - provide download confirmation
             return (
                 f"File download successful:\n"
                 f"Remote file: {remote_path}\n"
@@ -520,15 +492,104 @@ Important notes:
             )
 
         except SSHConnectionError as e:
-            return f"Error: SSH connection lost during download: {e!s}. Please reconnect using ssh_connect."
+            return f"Error: SSH connection: {e!s}"
         except paramiko.SFTPError as e:
-            return f"Error: SFTP error during download: {e}"
+            return f"Error: SFTP operation: {e!s}"
         except OSError as e:
-            return f"Error: I/O error during download: {e}"
+            return f"Error: I/O operation: {e!s}"
         except ValidationError as e:
-            return f"Invalid input parameters: {e}"
+            return f"Error: Invalid input parameters: {e!s}"
         except Exception as e:
-            return f"Error downloading file: {e}"
+            return f"Error: File download: {e!s}"
+
+    @create_action(
+        name="ssh_add_host_key",
+        description="""
+This tool adds an SSH host key to the local known_hosts file.
+
+Required inputs:
+- host: Hostname or IP address of the server
+- key: The SSH host key to add
+
+Optional inputs:
+- key_type: The type of SSH key (default: ssh-rsa)
+- port: SSH port number (default: 22)
+- known_hosts_file: Path to the known_hosts file (default: ~/.ssh/known_hosts)
+
+Example successful response:
+    Host key for 'example.com:22' successfully added to /home/user/.ssh/known_hosts
+
+Example error response:
+    Error: Unable to access known_hosts file
+    Error: Failed to write to known_hosts file
+
+Important notes:
+- This tool modifies the local known_hosts file
+- The host key should be properly formatted (typically obtained from the server)
+- If the known_hosts file doesn't exist, it will be created
+- Adding a host key prevents "unknown host" prompts when connecting
+- Existing entries for the same host will be updated (not duplicated)
+""",
+        schema=AddHostKeySchema,
+    )
+    def ssh_add_host_key(self, args: dict[str, Any]) -> str:
+        """Add an SSH host key to the known_hosts file.
+
+        Args:
+            args (dict[str, Any]): Input arguments for the action.
+
+        Returns:
+            str: A message containing the action response or error details.
+
+        """
+        try:
+            validated_args = AddHostKeySchema(**args)
+            host = validated_args.host
+            key = validated_args.key
+            key_type = validated_args.key_type
+            port = validated_args.port
+            known_hosts_file = os.path.expanduser(validated_args.known_hosts_file)
+
+            host_entry = host if port == 22 else f"[{host}]:{port}"
+
+            entry = f"{host_entry} {key_type} {key}\n"
+
+            known_hosts_dir = os.path.dirname(known_hosts_file)
+            if known_hosts_dir and not os.path.exists(known_hosts_dir):
+                os.makedirs(known_hosts_dir, mode=0o700, exist_ok=True)
+
+            existing_entry = False
+            existing_lines = []
+
+            if os.path.exists(known_hosts_file):
+                with open(known_hosts_file) as f:
+                    existing_lines = f.readlines()
+
+                for i, line in enumerate(existing_lines):
+                    if line.strip() and line.split()[0] == host_entry:
+                        existing_lines[i] = entry
+                        existing_entry = True
+                        break
+
+            if existing_entry:
+                with open(known_hosts_file, "w") as f:
+                    f.writelines(existing_lines)
+                return f"Host key for '{host_entry}' updated in {known_hosts_file}"
+            else:
+                with open(known_hosts_file, "a+") as f:
+                    f.write(entry)
+                return f"Host key for '{host_entry}' successfully added to {known_hosts_file}"
+
+        except ValidationError as e:
+            return f"Error: Invalid input parameters: {e!s}"
+        except FileNotFoundError as e:
+            return f"Error: Unable to access known_hosts file: {e!s}"
+        except PermissionError as e:
+            return f"Error: Permission denied when accessing known_hosts file: {e!s}"
+        except OSError as e:
+            return f"Error: File operation: {e!s}"
+        except Exception as e:
+            return f"Error: Host key addition: {e!s}"
 
     def supports_network(self, network: Network) -> bool:
         """Check if this provider supports the specified network.

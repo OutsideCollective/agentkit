@@ -119,6 +119,6 @@ def test_ssh_download_error(ssh_provider):
         )
 
         # Verify
-        assert "Error: SSH connection lost during download" in result
+        assert "Error: SSH connection:" in result
         assert "Download failed" in result
         mock_connection.download_file.assert_called_once_with("/remote/path", "/local/path")

@@ -64,7 +64,7 @@ def test_generate_text_success(provider, mock_ai_service, mock_response):
         assert isinstance(result, str)
 
         # Check that the output contains the file path and preview
-        assert "Text generated successfully" in result
+        assert "Text generation successful:" in result
         assert mock_file_path in result
         assert "Preview" in result
 
@@ -103,7 +103,7 @@ def test_generate_text_error(provider, mock_ai_service):
 
     # Verify the result is a string containing the error message
     assert isinstance(result, str)
-    assert "Error generating text: API error" in result
+    assert "Error: Text generation: API error" in result
 
 
 def test_generate_text_saves_to_file(provider, mock_ai_service, mock_response, tmpdir):
@@ -127,7 +127,7 @@ def test_generate_text_saves_to_file(provider, mock_ai_service, mock_response, t
         assert isinstance(result, str)
 
         # Check that the output contains the file path and preview
-        assert "Text generated successfully" in result
+        assert "Text generation successful:" in result
         assert mock_file_path in result
         assert "Preview" in result
 

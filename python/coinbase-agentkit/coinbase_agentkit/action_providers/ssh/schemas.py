@@ -10,7 +10,16 @@ from pydantic import BaseModel, Field
 
 from .connection import SSHConnectionParams
 
-SSHConnectionSchema = SSHConnectionParams
+
+class CustomSSHConnectionParams(SSHConnectionParams):
+    """Extended SSH connection parameters with known_hosts_file option."""
+
+    known_hosts_file: str | None = Field(
+        None, description="Path to the known_hosts file (default: system default)"
+    )
+
+
+SSHConnectionSchema = CustomSSHConnectionParams
 
 
 class RemoteShellSchema(BaseModel):
@@ -58,3 +67,30 @@ class FileDownloadSchema(BaseModel):
     connection_id: str = Field(description="Identifier for the SSH connection to use")
     remote_path: str = Field(description="Path to the file on the remote server")
     local_path: str = Field(description="Destination path on the local machine")
+
+
+class AddHostKeySchema(BaseModel):
+    """Schema for ssh_add_host_key action."""
+
+    host: str = Field(
+        description="Hostname or IP address of the server",
+        min_length=1,
+    )
+    key: str = Field(
+        description="The host key to add",
+        min_length=1,
+    )
+    key_type: str = Field(
+        default="ssh-rsa",
+        description="The type of the SSH key (e.g., ssh-rsa, ssh-ed25519)",
+    )
+    port: int = Field(
+        default=22,
+        description="SSH port number",
+        gt=0,
+        lt=65536,
+    )
+    known_hosts_file: str = Field(
+        default="~/.ssh/known_hosts",
+        description="Path to the known_hosts file",
+    )

@@ -127,6 +127,6 @@ def test_ssh_upload_error(ssh_provider):
         )
 
         # Verify
-        assert "Error: SSH connection lost during upload" in result
+        assert "Error: SSH connection:" in result
         assert "Upload failed" in result
         mock_connection.upload_file.assert_called_once_with("/local/path", "/remote/path")

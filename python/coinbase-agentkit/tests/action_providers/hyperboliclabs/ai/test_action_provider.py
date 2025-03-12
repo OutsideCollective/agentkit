@@ -7,7 +7,7 @@ import pytest
 
 from coinbase_agentkit.action_providers.hyperboliclabs.ai.action_provider import (
     AIActionProvider,
-    hyperbolic_ai_action_provider,
+    ai_action_provider,
 )
 from coinbase_agentkit.network import Network
 
@@ -50,5 +50,5 @@ def test_factory_function(mock_api_key):
     with patch(
         "coinbase_agentkit.action_providers.hyperboliclabs.ai.action_provider.AIActionProvider"
     ) as mock:
-        hyperbolic_ai_action_provider(mock_api_key)
+        ai_action_provider(mock_api_key)
         mock.assert_called_once_with(api_key=mock_api_key)

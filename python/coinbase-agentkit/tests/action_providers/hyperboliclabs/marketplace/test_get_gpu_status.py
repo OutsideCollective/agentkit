@@ -275,4 +275,4 @@ def test_get_gpu_status_api_error(provider):
         ),
     ):
         result = provider.get_gpu_status({})
-        assert "Error retrieving GPU status: API Error" in result
+        assert "Error: GPU status retrieval: API Error" in result

@@ -112,7 +112,7 @@ def test_get_spend_history_api_error(provider):
 
     # Call the method
     result = provider.get_spend_history({})
-    assert "Error retrieving spend history: API Error" in result
+    assert "Error: Spend history retrieval: API Error" in result
 
 
 def test_get_spend_history_invalid_response(provider):
@@ -122,7 +122,7 @@ def test_get_spend_history_invalid_response(provider):
 
     # Call the method
     result = provider.get_spend_history({})
-    assert "Error retrieving spend history: Invalid response" in result
+    assert "Error: Spend history retrieval: Invalid response" in result
 
 
 def test_get_spend_history_malformed_instance(provider):

@@ -51,7 +51,7 @@ def test_generate_image_success(provider, mock_ai_service, mock_response):
         assert isinstance(result, str)
 
         # Check that the output contains the file path
-        assert "Image(s) generated successfully" in result
+        assert "Image generation successful:" in result
         assert mock_file_path in result
 
         # Verify the mock was called correctly
@@ -91,7 +91,7 @@ def test_generate_image_with_custom_parameters(provider, mock_ai_service, mock_r
         assert isinstance(result, str)
 
         # Check that the output contains the file path
-        assert "Image(s) generated successfully" in result
+        assert "Image generation successful:" in result
         assert mock_file_path in result
 
         # Verify the mock was called correctly
@@ -143,7 +143,7 @@ def test_generate_image_multiple_images(provider, mock_ai_service):
         assert isinstance(result, str)
 
         # Check that the output contains both file paths
-        assert "Image(s) generated successfully" in result
+        assert "Image generation successful:" in result
         assert mock_file_paths[0] in result
         assert mock_file_paths[1] in result
 
@@ -199,7 +199,7 @@ def test_generate_image_error(provider, mock_ai_service):
 
     # Verify the result is a string
     assert isinstance(result, str)
-    assert "Error generating image: API error" in result
+    assert "Error: Image generation: API error" in result
 
 
 def test_generate_image_saves_to_file(provider, mock_ai_service, mock_response, tmpdir):
@@ -223,7 +223,7 @@ def test_generate_image_saves_to_file(provider, mock_ai_service, mock_response, 
         assert isinstance(result, str)
 
         # Check that the output contains the file path
-        assert "Image(s) generated successfully" in result
+        assert "Image generation successful:" in result
         assert mock_file_path in result
 
         # Verify save_base64_data was called with the correct arguments

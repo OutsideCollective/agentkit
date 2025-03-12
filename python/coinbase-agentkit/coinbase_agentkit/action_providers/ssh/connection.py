@@ -27,6 +27,69 @@ class SSHKeyError(Exception):
     pass
 
 
+class UnknownHostKeyError(SSHConnectionError):
+    """Exception raised when a host key is not recognized.
+
+    This includes information to add the key using the ssh_add_host_key action.
+    """
+
+    def __init__(self, hostname: str, key, port: int = 22):
+        """Initialize with host and key information.
+
+        Args:
+            hostname: The server hostname or IP
+            key: The server's host key
+            port: The SSH port
+
+        """
+        self.hostname = hostname
+        self.key = key
+        self.key_type = key.get_name()
+        self.key_data = key.get_base64()
+
+        # Check if hostname already includes port information (in square brackets format)
+        if hostname.startswith("[") and "]:" in hostname:
+            # Extract the actual hostname without brackets and port
+            base_hostname = hostname.split("]:")[0][1:]
+            actual_port = hostname.split("]:")[1]
+            display_hostname = hostname  # Use the full hostname as provided
+            self.port = int(actual_port)
+        else:
+            # Regular hostname without port
+            base_hostname = hostname
+            display_hostname = hostname
+            self.port = port
+
+        message = (
+            f"Host key verification failed for {display_hostname}. Server sent:\n"
+            f"  {self.key_type} {self.key_data}\n\n"
+            f"To add this host key, use the ssh_add_host_key action with the following parameters:\n"
+            f"  host: {base_hostname}\n"
+            f"  key: {self.key_data}\n"
+            f"  key_type: {self.key_type}\n"
+            f"  port: {self.port}"
+        )
+        super().__init__(message)
+
+
+class CapturingRejectPolicy(paramiko.MissingHostKeyPolicy):
+    """A host key policy that rejects unknown host keys but captures their details."""
+
+    def missing_host_key(self, client, hostname, key):
+        """Handle an unknown host key encounter.
+
+        Args:
+            client: The SSHClient instance
+            hostname: The server hostname or IP
+            key: The server's host key
+
+        Raises:
+            UnknownHostKeyError: Always, with host key details
+
+        """
+        raise UnknownHostKeyError(hostname, key)
+
+
 class SSHConnectionParams(BaseModel):
     """Validates SSH connection parameters."""
 
@@ -79,6 +142,8 @@ class SSHConnection:
         self.ssh_client = None
         self.connected = False
         self.connection_time = None
+        # Store known_hosts_file if it's available in params
+        self.known_hosts_file = getattr(params, "known_hosts_file", None)
 
     def is_connected(self) -> bool:
         """Check if there's an active SSH connection.
@@ -126,46 +191,57 @@ class SSHConnection:
         Raises:
             SSHKeyError: If there's an issue with the SSH key
             SSHConnectionError: If the connection fails
+            UnknownHostKeyError: If the host key is not recognized
 
         """
         params = self.params
         self.disconnect()
 
-        # Connect using the appropriate method based on available credentials
-        if params.password:
-            self.connect_with_password(params.host, params.username, params.password, params.port)
-        elif params.private_key:
-            self.connect_with_key(
-                params.host,
-                params.username,
-                params.private_key,
-                params.port,
-                password=params.password,
-            )
-        else:
-            private_key_path = params.private_key_path or os.getenv(
-                "SSH_PRIVATE_KEY_PATH", "~/.ssh/id_rsa"
-            )
-            private_key_path = os.path.expanduser(private_key_path)
-            self.connect_with_key_path(
-                params.host,
-                params.username,
-                private_key_path,
-                params.port,
-                password=params.password,
-            )
+        try:
+            # Connect using the appropriate method based on available credentials
+            if params.password:
+                self.connect_with_password(
+                    params.host, params.username, params.password, params.port
+                )
+            elif params.private_key:
+                self.connect_with_key(
+                    params.host,
+                    params.username,
+                    params.private_key,
+                    params.port,
+                    password=params.password,
+                )
+            else:
+                private_key_path = params.private_key_path or os.getenv(
+                    "SSH_PRIVATE_KEY_PATH", "~/.ssh/id_rsa"
+                )
+                private_key_path = os.path.expanduser(private_key_path)
+                self.connect_with_key_path(
+                    params.host,
+                    params.username,
+                    private_key_path,
+                    params.port,
+                    password=params.password,
+                )
 
-        # Verify connection is working
-        _, stdout, stderr = self.ssh_client.exec_command('echo "Connection successful"', timeout=5)
-        result = stdout.read().decode().strip()
+            # Verify connection is working
+            _, stdout, stderr = self.ssh_client.exec_command(
+                'echo "Connection successful"', timeout=5
+            )
+            result = stdout.read().decode().strip()
 
-        if result != "Connection successful":
-            e = stderr.read().decode().strip()
-            self.connected = False
-            raise SSHConnectionError(f"Connection test failed: {e!s}")
+            if result != "Connection successful":
+                e = stderr.read().decode().strip()
+                self.connected = False
+                raise SSHConnectionError(f"Connection test failed: {e!s}")
 
-        self.connected = True
-        self.connection_time = datetime.now()
+            self.connected = True
+            self.connection_time = datetime.now()
+
+        except UnknownHostKeyError:
+            # Pass through UnknownHostKeyError with detailed information
+            self.reset_connection()
+            raise
 
     def _load_key_from_string(
         self, key_string: str, password: str | None = None
@@ -194,6 +270,25 @@ class SSHConnection:
         except Exception as e:
             raise SSHKeyError(f"Failed to load key from string: {e!s}") from e
 
+    def _init_ssh_client(self):
+        """Initialize the SSH client with appropriate host key settings."""
+        self.ssh_client = paramiko.SSHClient()
+
+        # Load system host keys
+        self.ssh_client.load_system_host_keys()
+
+        # If known_hosts_file is provided, load those keys too
+        if self.known_hosts_file:
+            try:
+                known_hosts_path = os.path.expanduser(self.known_hosts_file)
+                if os.path.exists(known_hosts_path):
+                    self.ssh_client.load_host_keys(known_hosts_path)
+            except Exception as e:
+                print(f"Warning: Failed to load known_hosts file: {e!s}")
+
+        # Set policy for unknown host keys
+        self.ssh_client.set_missing_host_key_policy(CapturingRejectPolicy())
+
     def connect_with_key(
         self,
         host: str,
@@ -218,8 +313,7 @@ class SSHConnection:
             self.disconnect()
 
             # Initialize the SSH client
-            self.ssh_client = paramiko.SSHClient()
-            self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            self._init_ssh_client()
 
             # If private_key is a string, load it into a key object
             if isinstance(private_key, str):
@@ -232,6 +326,9 @@ class SSHConnection:
             )
         except SSHKeyError:
             # Pass through key errors
+            raise
+        except UnknownHostKeyError:
+            # Pass through UnknownHostKeyError with detailed information
             raise
         except Exception as e:
             raise SSHConnectionError(f"Failed to connect with key: {e!s}") from e
@@ -261,49 +358,52 @@ class SSHConnection:
             raise SSHKeyError(f"Key file not found at {private_key_path}")
 
         try:
+            # Load the key file
             key_obj = self._load_key_from_file(private_key_path, password=password)
-            try:
-                self.connect_with_key(host, username, key_obj, port=port, timeout=timeout)
-            except SSHConnectionError as e:
-                # Add more context about the key being used
-                raise SSHConnectionError(
-                    f"Failed to authenticate with key at {private_key_path}: {e!s}"
-                ) from e
+
+            # Connect using the loaded key
+            self.connect_with_key(host, username, key_obj, port, timeout)
         except SSHKeyError:
-            # Pass through key loading errors
+            # Pass through key errors
+            raise
+        except UnknownHostKeyError:
+            # Pass through UnknownHostKeyError with detailed information
             raise
         except Exception as e:
             raise SSHConnectionError(f"Failed to connect with key file: {e!s}") from e
 
     def _load_key_from_file(self, key_path: str, password: str | None = None) -> paramiko.RSAKey:
-        """Load an RSA key from a file path.
+        """Load an RSA key from a file.
 
         Args:
-            key_path: Path to the private key file
+            key_path: Path to the key file
             password: Optional password for encrypted keys
 
         Returns:
             paramiko.RSAKey: The loaded key
 
         Raises:
-            SSHKeyError: If there's an issue with the key
+            SSHKeyError: If there's an issue with the key file
 
         """
         try:
             return paramiko.RSAKey.from_private_key_file(key_path, password=password)
         except paramiko.ssh_exception.PasswordRequiredException as err:
-            # If password is required but not provided or incorrect
             raise SSHKeyError("Password-protected key file requires a password") from err
         except paramiko.ssh_exception.SSHException as e:
-            # More specific error for key format issues
             raise SSHKeyError(f"Invalid key format in {key_path}: {e!s}") from e
         except Exception as e:
             raise SSHKeyError(f"Failed to load key file {key_path}: {e!s}") from e
 
     def connect_with_password(
-        self, host: str, username: str, password: str, port: int = 22, timeout: int = 10
+        self,
+        host: str,
+        username: str,
+        password: str,
+        port: int = 22,
+        timeout: int = 10,
     ) -> None:
-        """Connect to a remote server using a password.
+        """Connect to a remote server using password authentication.
 
         Args:
             host: Remote server hostname/IP
@@ -317,12 +417,14 @@ class SSHConnection:
             self.disconnect()
 
             # Initialize the SSH client
-            self.ssh_client = paramiko.SSHClient()
-            self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            self._init_ssh_client()
 
             self.ssh_client.connect(
                 hostname=host, username=username, password=password, port=port, timeout=timeout
             )
+        except UnknownHostKeyError:
+            # Pass through UnknownHostKeyError with detailed information
+            raise
         except Exception as e:
             raise SSHConnectionError(f"Failed to connect with password: {e!s}") from e
 
@@ -381,7 +483,9 @@ class SSHConnection:
 
         except Exception as e:
             self.reset_connection()
-            raise SSHConnectionError(f"Command execution failed on {params.connection_id}: {e!s}") from e
+            raise SSHConnectionError(
+                f"Command execution failed on {params.connection_id}: {e!s}"
+            ) from e
 
     def disconnect(self) -> None:
         """Close SSH connection.
@@ -484,7 +588,9 @@ class SSHConnection:
             sftp.close()
         except Exception as e:
             self.reset_connection()
-            raise SSHConnectionError(f"File download failed for {params.connection_id}: {e!s}") from e
+            raise SSHConnectionError(
+                f"File download failed for {params.connection_id}: {e!s}"
+            ) from e
 
     def list_directory(self, remote_path: str) -> list[str]:
         """List contents of a directory on the remote server.
@@ -507,7 +613,9 @@ class SSHConnection:
             return files
         except Exception as e:
             self.reset_connection()
-            raise SSHConnectionError(f"Directory listing failed on {params.connection_id}: {e!s}") from e
+            raise SSHConnectionError(
+                f"Directory listing failed on {params.connection_id}: {e!s}"
+            ) from e
 
     def __enter__(self):
         """Enter context manager.

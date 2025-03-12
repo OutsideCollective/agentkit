@@ -4,7 +4,6 @@ This module tests the basic functionality of the SSHConnection class, including
 initialization, connection establishment, and status checking.
 """
 
-import os
 from unittest import mock
 
 import paramiko
@@ -13,8 +12,8 @@ import pytest
 from coinbase_agentkit.action_providers.ssh.connection import (
     SSHConnection,
     SSHConnectionError,
-    SSHKeyError,
     SSHConnectionParams,
+    SSHKeyError,
 )
 
 
@@ -43,7 +42,7 @@ def test_ssh_connection_initialization(ssh_connection, connection_params):
     assert ssh_connection.connection_time is None
 
 
-@mock.patch('paramiko.SSHClient')
+@mock.patch("paramiko.SSHClient")
 def test_connect_with_password(mock_ssh_client_class, ssh_connection):
     """Test connecting with password authentication."""
     # Setup mocks
@@ -71,7 +70,7 @@ def test_connect_with_password(mock_ssh_client_class, ssh_connection):
     assert ssh_connection.connection_time is not None
 
 
-@mock.patch('paramiko.SSHClient')
+@mock.patch("paramiko.SSHClient")
 def test_connect_with_password_failure(mock_ssh_client_class, ssh_connection):
     """Test handling connection failure with password authentication."""
     # Setup mocks
@@ -86,8 +85,8 @@ def test_connect_with_password_failure(mock_ssh_client_class, ssh_connection):
     assert ssh_connection.connected is False
 
 
-@mock.patch('paramiko.SSHClient')
-@mock.patch('paramiko.RSAKey')
+@mock.patch("paramiko.SSHClient")
+@mock.patch("paramiko.RSAKey")
 def test_connect_with_key(mock_rsa_key, mock_ssh_client_class, connection_params):
     """Test connecting with private key authentication."""
     # Setup connection params with key
@@ -107,7 +106,7 @@ def test_connect_with_key(mock_rsa_key, mock_ssh_client_class, connection_params
     mock_stderr = mock.Mock()
     mock_stderr.read.return_value = b""
     mock_client.exec_command.return_value = (None, mock_stdout, mock_stderr)
-    
+
     # Mock RSA key loading
     mock_key = mock.Mock()
     mock_rsa_key.from_private_key.return_value = mock_key
@@ -127,10 +126,10 @@ def test_connect_with_key(mock_rsa_key, mock_ssh_client_class, connection_params
     assert ssh_connection.connected is True
 
 
-@mock.patch('paramiko.SSHClient')
-@mock.patch('paramiko.RSAKey')
-@mock.patch('os.path.exists')
-@mock.patch('os.path.expanduser')
+@mock.patch("paramiko.SSHClient")
+@mock.patch("paramiko.RSAKey")
+@mock.patch("os.path.exists")
+@mock.patch("os.path.expanduser")
 def test_connect_with_key_path(mock_expanduser, mock_exists, mock_rsa_key, mock_ssh_client_class):
     """Test connecting with key path authentication."""
     # Setup connection params with key path
@@ -150,11 +149,11 @@ def test_connect_with_key_path(mock_expanduser, mock_exists, mock_rsa_key, mock_
     mock_stderr = mock.Mock()
     mock_stderr.read.return_value = b""
     mock_client.exec_command.return_value = (None, mock_stdout, mock_stderr)
-    
+
     # Mock path operations
     mock_expanduser.return_value = "/expanded/path/to/key"
     mock_exists.return_value = True
-    
+
     # Mock RSA key loading
     mock_key = mock.Mock()
     mock_rsa_key.from_private_key_file.return_value = mock_key
@@ -174,8 +173,8 @@ def test_connect_with_key_path(mock_expanduser, mock_exists, mock_rsa_key, mock_
     assert ssh_connection.connected is True
 
 
-@mock.patch('os.path.exists')
-@mock.patch('os.path.expanduser')
+@mock.patch("os.path.exists")
+@mock.patch("os.path.expanduser")
 def test_connect_with_nonexistent_key_file(mock_expanduser, mock_exists, connection_params):
     """Test error when key file doesn't exist."""
     # Setup connection params with key path
@@ -186,7 +185,7 @@ def test_connect_with_nonexistent_key_file(mock_expanduser, mock_exists, connect
         private_key_path="/path/to/key",
     )
     ssh_connection = SSHConnection(params)
-    
+
     # Mock path operations
     mock_expanduser.return_value = "/expanded/path/to/key"
     mock_exists.return_value = False
@@ -198,43 +197,43 @@ def test_connect_with_nonexistent_key_file(mock_expanduser, mock_exists, connect
     assert "Key file not found" in str(exc_info.value)
 
 
-@mock.patch('paramiko.SSHClient')
+@mock.patch("paramiko.SSHClient")
 def test_is_connected_true(mock_ssh_client_class, ssh_connection):
     """Test is_connected when connection is active."""
     # Setup mock client and attach to connection
     mock_client = mock_ssh_client_class.return_value
     ssh_connection.ssh_client = mock_client
     ssh_connection.connected = True
-    
+
     # Mock successful echo test
     mock_stdout = mock.Mock()
     mock_stdout.read.return_value = b"1"
     mock_client.exec_command.return_value = (None, mock_stdout, None)
-    
+
     # Call the method
     result = ssh_connection.is_connected()
-    
+
     # Verify
     assert result is True
     mock_client.exec_command.assert_called_once_with("echo 1", timeout=5)
 
 
-@mock.patch('paramiko.SSHClient')
+@mock.patch("paramiko.SSHClient")
 def test_is_connected_failed_command(mock_ssh_client_class, ssh_connection):
     """Test is_connected when echo test fails."""
     # Setup mock client and attach to connection
     mock_client = mock_ssh_client_class.return_value
     ssh_connection.ssh_client = mock_client
     ssh_connection.connected = True
-    
+
     # Mock failed echo test
     mock_stdout = mock.Mock()
     mock_stdout.read.return_value = b""
     mock_client.exec_command.return_value = (None, mock_stdout, None)
-    
+
     # Call the method
     result = ssh_connection.is_connected()
-    
+
     # Verify
     assert result is False
     assert ssh_connection.connected is False
@@ -253,17 +252,17 @@ def test_is_connected_not_connected_flag(ssh_connection):
     assert ssh_connection.is_connected() is False
 
 
-@mock.patch('paramiko.SSHClient')
+@mock.patch("paramiko.SSHClient")
 def test_reset_connection(mock_ssh_client_class, ssh_connection):
     """Test resetting a connection."""
     # Setup mock client and attach to connection
     mock_client = mock_ssh_client_class.return_value
     ssh_connection.ssh_client = mock_client
     ssh_connection.connected = True
-    
+
     # Call the method
     ssh_connection.reset_connection()
-    
+
     # Verify
     assert ssh_connection.connected is False
     assert ssh_connection.connection_time is None
@@ -274,7 +273,7 @@ def test_reset_connection(mock_ssh_client_class, ssh_connection):
 def test_disconnect(ssh_connection):
     """Test disconnecting from SSH server."""
     # Mock reset_connection
-    with mock.patch.object(ssh_connection, 'reset_connection') as mock_reset:
+    with mock.patch.object(ssh_connection, "reset_connection") as mock_reset:
         ssh_connection.disconnect()
         mock_reset.assert_called_once()
 
@@ -287,11 +286,11 @@ def test_get_connection_info_connected(ssh_connection):
     ssh_connection.params.port = 22
     ssh_connection.params.username = "testuser"
     ssh_connection.connected = True
-    
+
     # Mock is_connected
-    with mock.patch.object(ssh_connection, 'is_connected', return_value=True):
+    with mock.patch.object(ssh_connection, "is_connected", return_value=True):
         info = ssh_connection.get_connection_info()
-    
+
     # Verify content
     assert "Connection ID: test-conn" in info
     assert "Status: Connected" in info
@@ -303,11 +302,11 @@ def test_get_connection_info_not_connected(ssh_connection):
     """Test get_connection_info when not connected."""
     # Set connection properties
     ssh_connection.params.connection_id = "test-conn"
-    
+
     # Mock is_connected
-    with mock.patch.object(ssh_connection, 'is_connected', return_value=False):
+    with mock.patch.object(ssh_connection, "is_connected", return_value=False):
         info = ssh_connection.get_connection_info()
-    
+
     # Verify content
     assert "Connection ID: test-conn" in info
     assert "Status: Not connected" in info
@@ -318,10 +317,10 @@ def test_connection_context_manager(ssh_connection):
     # Mock disconnect method
     mock_disconnect = mock.Mock()
     ssh_connection.disconnect = mock_disconnect
-    
+
     # Use as context manager
     with ssh_connection as conn:
         assert conn is ssh_connection
-    
+
     # Verify disconnect was called
-    mock_disconnect.assert_called_once() 
+    mock_disconnect.assert_called_once()

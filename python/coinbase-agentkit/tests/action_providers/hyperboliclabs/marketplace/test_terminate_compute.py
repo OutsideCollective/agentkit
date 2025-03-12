@@ -49,7 +49,7 @@ def test_terminate_compute_api_error(provider):
         ),
     ):
         result = provider.terminate_compute({"id": "i-123456"})
-        assert "Error terminating compute: API Error" in result
+        assert "Error: Compute termination: API Error" in result
 
 
 def test_terminate_compute_missing_instance_id(provider):

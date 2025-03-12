@@ -44,7 +44,7 @@ def test_generate_audio_success(provider, mock_ai_service, mock_response):
         assert isinstance(result, str)
 
         # Check that the output contains the file path
-        assert "Audio generated successfully" in result
+        assert "Audio generation successful:" in result
         assert mock_file_path in result
 
         # Verify the mock was called correctly
@@ -75,7 +75,7 @@ def test_generate_audio_with_minimal_input(provider, mock_ai_service, mock_respo
         assert isinstance(result, str)
 
         # Check that the output contains the file path
-        assert "Audio generated successfully" in result
+        assert "Audio generation successful:" in result
         assert mock_file_path in result
 
         # Verify the mock was called correctly
@@ -111,7 +111,7 @@ def test_generate_audio_with_custom_parameters(provider, mock_ai_service, mock_r
         assert isinstance(result, str)
 
         # Check that the output contains the file path
-        assert "Audio generated successfully" in result
+        assert "Audio generation successful:" in result
         assert mock_file_path in result
 
         # Verify the mock was called correctly
@@ -159,7 +159,7 @@ def test_generate_audio_error(provider, mock_ai_service):
 
     # Verify the result is a string
     assert isinstance(result, str)
-    assert "Error generating audio: API error" in result
+    assert "Error: Audio generation: API error" in result
 
 
 def test_generate_audio_saves_to_file(provider, mock_ai_service, mock_response, tmpdir):
@@ -183,7 +183,7 @@ def test_generate_audio_saves_to_file(provider, mock_ai_service, mock_response, 
         assert isinstance(result, str)
 
         # Check that the output contains the file path
-        assert "Audio generated successfully" in result
+        assert "Audio generation successful:" in result
         assert mock_file_path in result
 
         # Verify save_base64_data was called with the correct arguments

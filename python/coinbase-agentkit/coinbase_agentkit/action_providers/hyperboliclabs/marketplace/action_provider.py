@@ -14,9 +14,7 @@ from .schemas import (
     GetAvailableGpusSchema,
     GetAvailableGpusTypesSchema,
     GetGpuStatusSchema,
-    RemoteShellSchema,
     RentComputeSchema,
-    SSHAccessSchema,
     TerminateComputeSchema,
 )
 from .service import MarketplaceService
@@ -27,7 +25,6 @@ from .utils import (
     format_gpu_types,
     format_rent_compute_response,
     format_terminate_compute_response,
-    ssh_manager,
 )
 
 
@@ -59,21 +56,21 @@ class MarketplaceActionProvider(ActionProvider):
     @create_action(
         name="get_available_gpus",
         description="""
-This tool will get all the available GPU machines on the Hyperbolic platform.
+This tool retrieves all the available GPU machines on the Hyperbolic platform.
 
 It does not take any inputs.
 
-A successful response will return a formatted list of available GPU machines with details like:
+Example successful response:
     Cluster: us-east-1
     Node ID: node-123
     GPU Model: NVIDIA A100
     Available GPUs: 4/8
     Price: $2.50/hour per GPU
 
-A failure response will return an error message like:
-    Error retrieving available GPUs: API request failed
-    Error retrieving available GPUs: Invalid authentication credentials
-    Error retrieving available GPUs: Rate limit exceeded
+Example error response:
+    Error: API request failed
+    Error: Invalid authentication credentials
+    Error: Rate limit exceeded
 
 Important notes:
 - The GPU prices are shown in dollars per hour
@@ -83,45 +80,43 @@ Important notes:
         schema=GetAvailableGpusSchema,
     )
     def get_available_gpus(self, args: dict[str, Any]) -> str:
-        """Get available GPU instances from the marketplace.
+        """Retrieve available GPU instances from the marketplace.
 
         Args:
-            args (dict[str, Any]): Empty dictionary, no arguments needed.
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: A message containing the available GPU instances or error details.
+            str: A message containing the action response or error details.
 
         """
         GetAvailableGpusSchema(**args)
 
         try:
-            # Get available instances
             response = self.marketplace.get_available_instances()
 
             if not response.instances:
                 return "No available GPU instances found."
 
-            # Use the format function to generate the response
             return format_all_gpu_instances(response.instances)
 
         except Exception as e:
-            return f"Error retrieving available GPUs: {e}"
+            return f"Error: GPU retrieval: {e!s}"
 
     @create_action(
         name="get_available_gpus_types",
         description="""
-This tool will get all the available GPU types/models on the Hyperbolic platform.
+This tool retrieves all the available GPU types/models on the Hyperbolic platform.
 
 It does not take any inputs.
 
-A successful response will return a list of available GPU models like:
+Example successful response:
     Available GPU Types:
     - NVIDIA A100
     - NVIDIA RTX 4090
     - NVIDIA H100
 
-A failure response will return an error message like:
-    Error retrieving available GPU types: API request failed
+Example error response:
+    Error: API request failed
 
 Important notes:
 - Only models with available GPUs are listed
@@ -131,39 +126,37 @@ Important notes:
         schema=GetAvailableGpusTypesSchema,
     )
     def get_available_gpus_types(self, args: dict[str, Any]) -> str:
-        """Get available GPU types/models from the marketplace.
+        """Retrieve available GPU types/models from the marketplace.
 
         Args:
-            args (dict[str, Any]): Empty dictionary, no arguments needed.
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: A message containing the available GPU types or error details.
+            str: A message containing the action response or error details.
 
         """
         GetAvailableGpusTypesSchema(**args)
 
         try:
-            # Get available instances
             response = self.marketplace.get_available_instances()
 
             if not response.instances:
                 return "No available GPU instances found."
 
-            # Use the format function to generate the response
             return format_gpu_types(response.instances)
 
         except Exception as e:
-            return f"Error retrieving available GPU types: {e}"
+            return f"Error: GPU types retrieval: {e!s}"
 
     @create_action(
         name="get_available_gpus_by_type",
         description="""
-This tool will get all available GPU machines of a specific model on the Hyperbolic platform.
+This tool retrieves all available GPU machines of a specific model on the Hyperbolic platform.
 
 Required inputs:
 - gpu_model: The GPU model to filter by (e.g., "NVIDIA A100")
 
-A successful response will list available GPU machines of the specified model:
+Example successful response:
     Available NVIDIA A100 GPU Options:
 
     Cluster: us-east-1
@@ -180,9 +173,9 @@ A successful response will list available GPU machines of the specified model:
     Price: $2.75/hour per GPU
     ----------------------------------------
 
-Failure responses include:
-    Error retrieving available GPUs: API request failed
-    No available GPU instances with the model 'NVIDIA A100' found.
+Example error response:
+    Error: API request failed
+    Error: No available GPU instances with the model 'NVIDIA A100' found
 
 Important notes:
 - GPU model name must be exact
@@ -193,48 +186,45 @@ Important notes:
         schema=GetAvailableGpusByTypeSchema,
     )
     def get_available_gpus_by_type(self, args: dict[str, Any]) -> str:
-        """Get available GPU instances of a specific model from the marketplace.
+        """Retrieve available GPU instances of a specific model from the marketplace.
 
         Args:
-            args (dict[str, Any]): Dictionary containing:
-                - gpu_model: The specific GPU model to filter by.
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: A message containing the available GPU instances of the specified model or error details.
+            str: A message containing the action response or error details.
 
         """
         validated_args = GetAvailableGpusByTypeSchema(**args)
         gpu_model = validated_args.gpu_model
 
         try:
-            # Get available instances
             response = self.marketplace.get_available_instances()
 
             if not response.instances:
                 return "No available GPU instances found."
 
-            # Use the format function to generate the response
             return format_gpu_instances_by_type(response.instances, gpu_model)
 
         except Exception as e:
-            return f"Error retrieving available GPUs: {e}"
+            return f"Error: GPU retrieval: {e!s}"
 
     @create_action(
         name="get_gpu_status",
         description="""
-This tool will get the status and SSH commands for your currently rented GPUs on the Hyperbolic platform.
+This tool retrieves the status and SSH commands for your currently rented GPUs on the Hyperbolic platform.
 
 It does not take any inputs.
 
-A successful response will show details for each rented GPU like:
+Example successful response:
     Instance ID: i-123456
     Status: running
     GPU Model: NVIDIA A100
     SSH Command: ssh user@host -i key.pem
     ----------------------------------------
 
-A failure response will return an error message like:
-    Error retrieving GPU status: API request failed
+Example error response:
+    Error: API request failed
 
 Important notes:
 - If status is "starting", the GPU is not ready yet - check again in a few seconds
@@ -244,32 +234,29 @@ Important notes:
         schema=GetGpuStatusSchema,
     )
     def get_gpu_status(self, args: dict[str, Any]) -> str:
-        """Get status of currently rented GPUs.
+        """Retrieve status and SSH commands for currently rented GPUs.
 
         Args:
-            args (dict[str, Any]): Empty dictionary, no arguments needed.
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: A message containing the status of rented GPUs or error details.
+            str: A message containing the action response or error details.
 
         """
         GetGpuStatusSchema(**args)
 
         try:
-            # Get rented instances
             response = self.marketplace.get_rented_instances()
 
             if not response.instances:
                 return "No rented GPU instances found."
 
-            # Format the response
             output = ["Your Rented GPU Instances:"]
             for _i, instance in enumerate(response.instances):
                 formatted = format_gpu_status(instance)
                 output.append(formatted)
                 output.append("-" * 40)
 
-            # Add SSH instructions
             output.extend(
                 [
                     "\nSSH Connection Instructions:",
@@ -283,7 +270,7 @@ Important notes:
             return final_output
 
         except Exception as e:
-            return f"Error retrieving GPU status: {e}"
+            return f"Error: GPU status retrieval: {e!s}"
 
     @create_action(
         name="rent_compute",
@@ -295,21 +282,18 @@ Required inputs:
 - node_name: Which node to rent
 - gpu_count: How many GPUs to rent
 
-Example response:
-    {
-      "status": "success",
-      "instance": {
-        "id": "i-123456",
-        "cluster": "us-east-1",
-        "node": "node-789",
-        "gpu_count": 2,
-        "status": "starting"
-      }
-    }
+Example successful response:
+    GPU rental successful:
+    Instance ID: i-123456
+    Cluster: us-east-1
+    Node: node-789
+    GPU Count: 2
+    Status: starting
 
-A failure response will return an error message like:
-    Error renting compute: Invalid cluster name
-    Error renting compute: Node not available
+Example error response:
+    Error: Invalid cluster name
+    Error: Node not available
+    Error: API request failed
 
 Important notes:
 - If the user does not provide the required inputs, but does provide a gpu type, you can use get_available_gpus_types and get_available_gpus_by_type to get valid inputs
@@ -323,48 +307,41 @@ Important notes:
         schema=RentComputeSchema,
     )
     def rent_compute(self, args: dict[str, Any]) -> str:
-        """Rent GPU compute resources from Hyperbolic platform.
+        """Rents a GPU machine on the platform.
 
         Args:
-            args (dict[str, Any]): Dictionary containing:
-                - cluster_name: The cluster to rent from
-                - node_name: The node ID to rent
-                - gpu_count: Number of GPUs to rent
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: A message containing the rental response or error details.
+            str: A message containing the action response or error details.
 
         """
         validated_args = RentComputeSchema(**args)
 
         try:
-            # Make the rental request
             response = self.marketplace.rent_instance(validated_args)
 
-            # Format the response with next steps
             return format_rent_compute_response(response)
 
         except Exception as e:
-            return f"Error renting compute: {e}"
+            return f"Error: Compute rental: {e!s}"
 
     @create_action(
         name="terminate_compute",
         description="""
-This tool allows you to terminate a GPU instance on the Hyperbolic platform.
+This tool terminates a GPU instance on the Hyperbolic platform.
 
 Required inputs:
 - id: The ID of the instance to terminate (e.g., "respectful-rose-pelican")
 
 Example successful response:
-    {
-      "status": "success",
-      "message": "Instance terminated successfully"
-    }
+    Instance terminated successfully.
+    Instance ID: respectful-rose-pelican
 
-A failure response will return an error message like:
-    Error terminating compute: Instance not found
-    Error terminating compute: Instance already terminated
-    Error terminating compute: API request failed
+Example error response:
+    Error: Instance not found
+    Error: Instance already terminated
+    Error: API request failed
 
 Important notes:
 - The instance ID must be valid and active
@@ -375,163 +352,24 @@ Important notes:
         schema=TerminateComputeSchema,
     )
     def terminate_compute(self, args: dict[str, Any]) -> str:
-        """Terminate a GPU compute instance.
+        """Terminates a GPU instance on the platform.
 
         Args:
-            args (dict[str, Any]): Dictionary containing:
-                - id: The ID of the instance to terminate.
+            args (dict[str, Any]): Input arguments for the action.
 
         Returns:
-            str: A message containing the termination response or error details.
+            str: A message containing the action response or error details.
 
         """
         validated_args = TerminateComputeSchema(**args)
 
         try:
-            # Make the termination request
             response = self.marketplace.terminate_instance(validated_args)
 
-            # Format the success response with next steps
             return format_terminate_compute_response(response)
 
         except Exception as e:
-            return f"Error terminating compute: {e}"
-
-    #     @create_action(
-    #         name="ssh_connect",
-    #         description="""
-    # This tool will establish an SSH connection to a remote server.
-
-    # Required inputs:
-    # - host: Hostname or IP address of the remote server
-    # - username: SSH username for authentication
-
-    # Optional inputs:
-    # - password: SSH password for authentication (if not using key)
-    # - private_key_path: Path to private key file (uses SSH_PRIVATE_KEY_PATH env var if not provided)
-    # - port: SSH port number (default: 22)
-
-    # Example successful response:
-    #     Successfully connected to host.example.com as username
-
-    # A failure response will return an error message like:
-    #     SSH Connection Error: Authentication failed
-    #     SSH Connection Error: Connection refused
-    #     SSH Key Error: Key file not found at /path/to/key
-
-    # Important notes:
-    # - After connecting, use remote_shell to execute commands
-    # - Use 'ssh_status' command to check connection status
-    # - Connection remains active until explicitly disconnected
-    # - Default key path is ~/.ssh/id_rsa if not specified
-    # - Either password or key authentication must be provided
-    # """,
-    #         schema=SSHAccessSchema,
-    #     )
-    def ssh_connect(self, args: dict[str, Any]) -> str:
-        """Establish SSH connection to remote server.
-
-        Args:
-            args (dict[str, Any]): Dictionary containing:
-                - host: Remote server hostname/IP
-                - username: SSH username
-                - password: Optional SSH password
-                - private_key_path: Optional key file path
-                - port: Optional port number
-
-        Returns:
-            str: Connection status message.
-
-        """
-        validated_args = SSHAccessSchema(**args)
-
-        try:
-            # Establish SSH connection
-            return ssh_manager.connect(
-                host=validated_args.host,
-                username=validated_args.username,
-                password=validated_args.password,
-                private_key_path=validated_args.private_key_path,
-                port=validated_args.port,
-            )
-
-        except Exception as e:
-            return f"SSH Connection Error: {e}"
-
-    #     @create_action(
-    #         name="remote_shell",
-    #         description="""
-    # This tool will execute shell commands on a remote server via SSH.
-
-    # Required inputs:
-    # - command: The shell command to execute on the remote server
-
-    # Example successful response:
-    #     Command output from remote server
-
-    # A failure response will return an error message like:
-    #     Error: No active SSH connection. Please connect first.
-    #     Error: Command execution failed.
-    #     Error: SSH connection lost.
-
-    # Important notes:
-    # - Requires an active SSH connection (use ssh_connect first)
-    # - Use 'ssh_status' to check current connection status
-    # - Commands are executed in the connected SSH session
-    # - Returns command output as a string
-    # - You can install any packages you need on the remote server
-    # """,
-    #         schema=RemoteShellSchema,
-    #     )
-    def remote_shell(self, args: dict[str, Any]) -> str:
-        """Execute a command on the remote server.
-
-        Args:
-            args (dict[str, Any]): Dictionary containing:
-                - command: The shell command to execute.
-
-        Returns:
-            str: Command output or error message.
-
-        """
-        validated_args = RemoteShellSchema(**args)
-        command = validated_args.command.strip()
-
-        # Special command to check SSH status
-        if command.lower() == "ssh_status":
-            return ssh_manager.get_connection_info()
-
-        # Verify SSH is connected before executing
-        if not ssh_manager.is_connected:
-            # Try to get instance information to suggest connection details
-            try:
-                response = self.marketplace.get_rented_instances()
-
-                if response.instances:
-                    instance_info = []
-                    for instance in response.instances:
-                        status = instance.status.lower()
-                        instance_id = instance.id
-                        if instance.ssh_access and status == "running":
-                            instance_info.append(
-                                f"Instance {instance_id}: host={instance.ssh_access.host}, username={instance.ssh_access.username}"
-                            )
-
-                    if instance_info:
-                        return (
-                            "Error: No active SSH connection. Please connect first using ssh_connect.\n\nAvailable instances:\n"
-                            + "\n".join(instance_info)
-                        )
-            except Exception:
-                pass
-
-            return "Error: No active SSH connection. Please connect to a remote server first using ssh_connect."
-
-        try:
-            # Execute command remotely
-            return ssh_manager.execute(command)
-        except Exception as e:
-            return f"Error executing remote command: {e}"
+            return f"Error: Compute termination: {e!s}"
 
     def supports_network(self, _: Network) -> bool:
         """Check if network is supported by Hyperbolic marketplace actions.

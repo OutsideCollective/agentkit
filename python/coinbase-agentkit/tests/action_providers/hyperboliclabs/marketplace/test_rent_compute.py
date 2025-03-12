@@ -61,7 +61,7 @@ def test_rent_compute_api_error(provider):
         result = provider.rent_compute(
             {"cluster_name": "us-east-1", "node_name": "node-789", "gpu_count": "2"}
         )
-        assert "Error renting compute: API Error" in result
+        assert "Error: Compute rental: API Error" in result
 
 
 def test_rent_compute_missing_fields(provider):

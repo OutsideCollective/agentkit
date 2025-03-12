@@ -45,7 +45,7 @@ def test_link_wallet_address_api_error(provider):
         patch.object(provider.settings, "link_wallet", side_effect=Exception("API Error")),
     ):
         result = provider.link_wallet_address({"address": VALID_ETH_ADDRESS})
-        assert "Error linking wallet address: API Error" in result
+        assert "Error: Wallet linking: API Error" in result
 
 
 def test_link_wallet_address_missing_address(provider):
