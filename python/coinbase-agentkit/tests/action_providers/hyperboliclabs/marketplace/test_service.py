@@ -4,7 +4,8 @@ import pytest
 import requests
 
 from coinbase_agentkit.action_providers.hyperboliclabs.constants import MARKETPLACE_BASE_URL
-from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.models import (
+from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.service import MarketplaceService
+from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.types import (
     AvailableInstancesResponse,
     InstanceHistoryResponse,
     RentedInstancesResponse,
@@ -13,7 +14,6 @@ from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.models import
     TerminateInstanceRequest,
     TerminateInstanceResponse,
 )
-from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.service import MarketplaceService
 
 from .conftest import (
     TEST_CLUSTER,

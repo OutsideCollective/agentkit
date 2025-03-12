@@ -1,8 +1,8 @@
-"""Service for account settings operations."""
+"""Service for account settings-related operations."""
 
 from ..constants import SETTINGS_BASE_URL, SETTINGS_ENDPOINTS
 from ..service import Base
-from .models import WalletLinkRequest, WalletLinkResponse
+from .types import WalletLinkRequest, WalletLinkResponse
 
 
 class SettingsService(Base):

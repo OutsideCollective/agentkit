@@ -4,15 +4,13 @@ from unittest.mock import patch
 
 import pytest
 
-from coinbase_agentkit.action_providers.hyperboliclabs.settings.models import WalletLinkResponse
+from coinbase_agentkit.action_providers.hyperboliclabs.settings.types import WalletLinkResponse
 
-# Test constants
 VALID_ETH_ADDRESS = "0x123456789abcdef"
 
 
 def test_link_wallet_address_success(provider):
     """Test successful wallet address linking."""
-    # Create a proper WalletLinkResponse object
     mock_response = WalletLinkResponse(success=True, message="Wallet address linked successfully")
 
     with (
@@ -21,11 +19,9 @@ def test_link_wallet_address_success(provider):
     ):
         result = provider.link_wallet_address({"address": VALID_ETH_ADDRESS})
 
-        # Check success response
         assert '"success": true' in result
         assert '"message": "Wallet address linked successfully"' in result
 
-        # Check next steps
         assert "Next Steps:" in result
         assert "1. Your wallet has been successfully linked to your Hyperbolic account" in result
         assert "2. To add funds, send any of these tokens on Base Mainnet:" in result

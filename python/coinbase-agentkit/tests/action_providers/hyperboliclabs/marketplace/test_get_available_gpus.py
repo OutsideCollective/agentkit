@@ -7,7 +7,7 @@ import pytest
 from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.action_provider import (
     MarketplaceActionProvider,
 )
-from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.models import (
+from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.types import (
     AvailableInstance,
     AvailableInstancesResponse,
     CpuHardware,
@@ -89,24 +89,20 @@ def test_get_available_gpus_success(provider, mock_api_response):
     ):
         result = provider.get_available_gpus({})
 
-        # Check header
         assert "Available GPU Options:" in result
 
-        # Check first instance
         assert "Cluster: angelic-mushroom-dolphin" in result
         assert "Node ID: korea-amd14-78" in result
         assert "GPU Model: NVIDIA-GeForce-RTX-3070" in result
         assert "Available GPUs: 1/1" in result
         assert "Price: $20.00/hour per GPU" in result
 
-        # Check second instance
         assert "Cluster: beneficial-palm-boar" in result
         assert "Node ID: korea-amd11-181" in result
         assert "GPU Model: NVIDIA-GeForce-RTX-3070" in result
         assert "Available GPUs: 1/1" in result
         assert "Price: $16.00/hour per GPU" in result
 
-        # Verify order of appearance
         first_idx = result.find("angelic-mushroom-dolphin")
         second_idx = result.find("beneficial-palm-boar")
         assert first_idx < second_idx, "GPU instances should be listed in order"

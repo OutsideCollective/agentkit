@@ -1,8 +1,8 @@
-"""AI service for Hyperbolic platform."""
+"""Service for AI-related operations."""
 
 from ..constants import AI_SERVICES_BASE_URL, AI_SERVICES_ENDPOINTS, SUPPORTED_IMAGE_MODELS
 from ..service import Base
-from .models import (
+from .types import (
     AudioGenerationRequest,
     AudioGenerationResponse,
     ChatCompletionRequest,

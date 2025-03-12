@@ -9,11 +9,11 @@ from coinbase_agentkit.action_providers.hyperboliclabs.constants import (
     SETTINGS_BASE_URL,
     SETTINGS_ENDPOINTS,
 )
-from coinbase_agentkit.action_providers.hyperboliclabs.settings.models import (
+from coinbase_agentkit.action_providers.hyperboliclabs.settings.service import SettingsService
+from coinbase_agentkit.action_providers.hyperboliclabs.settings.types import (
     WalletLinkRequest,
     WalletLinkResponse,
 )
-from coinbase_agentkit.action_providers.hyperboliclabs.settings.service import SettingsService
 
 
 def test_settings_service_init(mock_api_key):
@@ -76,26 +76,23 @@ def test_settings_service_error_handling(mock_request, mock_api_key):
         service.link_wallet(request)
 
 
-def test_link_wallet_success(settings, mock_request):
+def test_link_wallet_success(mock_request, mock_api_key):
     """Test that linking a wallet address works correctly."""
-    # Setup the mock response
+    service = SettingsService(mock_api_key)
     mock_request.return_value.json.return_value = {
         "success": True,
         "message": "Wallet address linked successfully",
         "address": "0x1234567890abcdef1234567890abcdef12345678",
     }
 
-    # Call the service method
     wallet_address = "0x1234567890abcdef1234567890abcdef12345678"
     request = WalletLinkRequest(address=wallet_address)
-    response = settings.link_wallet(request)
+    response = service.link_wallet(request)
 
-    # Verify the response
     assert isinstance(response, WalletLinkResponse)
     assert response.success is True
     assert response.message == "Wallet address linked successfully"
 
-    # Verify the API was called correctly
     mock_request.assert_called_once_with(
         method="POST",
         url=f"{SETTINGS_BASE_URL}{SETTINGS_ENDPOINTS['LINK_WALLET']}",
@@ -105,8 +102,9 @@ def test_link_wallet_success(settings, mock_request):
     )
 
 
-def test_link_wallet_invalid_address(settings, mock_request):
+def test_link_wallet_invalid_address(mock_request, mock_api_key):
     """Test that linking an invalid wallet address raises an error."""
+    service = SettingsService(mock_api_key)
     mock_request.side_effect = requests.exceptions.HTTPError(
         "422 Client Error: Unprocessable Entity"
     )
@@ -115,11 +113,12 @@ def test_link_wallet_invalid_address(settings, mock_request):
     request = WalletLinkRequest(address=invalid_address)
 
     with pytest.raises(requests.exceptions.HTTPError):
-        settings.link_wallet(request)
+        service.link_wallet(request)
 
 
-def test_link_wallet_api_error(settings, mock_request):
+def test_link_wallet_api_error(mock_request, mock_api_key):
     """Test that API errors are properly propagated."""
+    service = SettingsService(mock_api_key)
     mock_request.side_effect = requests.exceptions.HTTPError(
         "500 Server Error: Internal Server Error"
     )
@@ -128,4 +127,4 @@ def test_link_wallet_api_error(settings, mock_request):
     request = WalletLinkRequest(address=address)
 
     with pytest.raises(requests.exceptions.HTTPError):
-        settings.link_wallet(request)
+        service.link_wallet(request)

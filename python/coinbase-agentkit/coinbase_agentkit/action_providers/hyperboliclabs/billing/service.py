@@ -2,7 +2,7 @@
 
 from ..constants import BILLING_BASE_URL, BILLING_ENDPOINTS
 from ..service import Base
-from .models import (
+from .types import (
     BillingBalanceResponse,
     BillingPurchaseHistoryResponse,
 )

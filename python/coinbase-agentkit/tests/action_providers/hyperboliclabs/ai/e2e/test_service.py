@@ -12,7 +12,7 @@ import pytest
 import requests
 from PIL import Image
 
-from coinbase_agentkit.action_providers.hyperboliclabs.ai.models import (
+from coinbase_agentkit.action_providers.hyperboliclabs.ai.types import (
     AudioGenerationRequest,
     AudioGenerationResponse,
     ChatCompletionRequest,
@@ -53,7 +53,6 @@ def test_ai_audio_generation(ai_service):
     """Test audio generation with different inputs and parameters."""
     text = "Hello, this is a test"
 
-    # Test with request object using defaults
     request = AudioGenerationRequest(text=text)
     response = ai_service.generate_audio(request)
     assert isinstance(response, AudioGenerationResponse)
@@ -62,7 +61,6 @@ def test_ai_audio_generation(ai_service):
     if response.duration:
         assert response.duration > 0
 
-    # Test with all optional parameters
     request = AudioGenerationRequest(
         text="Testing audio parameters",
         language="EN",
@@ -96,7 +94,6 @@ def test_ai_audio_generation_languages(ai_service, language):
 @pytest.mark.e2e
 def test_ai_chat_completion(ai_service):
     """Test chat completion with different prompts."""
-    # Test with ChatCompletionRequest
     messages = [
         ChatMessage(role="system", content="You are a helpful assistant."),
         ChatMessage(role="user", content="What is 2+2?"),
@@ -107,7 +104,6 @@ def test_ai_chat_completion(ai_service):
     assert len(response.choices) > 0
     assert response.choices[0].message.role == "assistant"
 
-    # Verify usage information if available
     if response.usage:
         assert response.usage.prompt_tokens > 0
         assert response.usage.completion_tokens > 0
@@ -121,7 +117,6 @@ def test_ai_image_generation(ai_service, tmp_path):
     """Test image generation with different models and parameters."""
     prompt = "A beautiful sunset over mountains"
 
-    # Test with request object and default parameters
     request = ImageGenerationRequest(
         prompt=prompt,
         model_name="SDXL1.0-base",
@@ -136,9 +131,8 @@ def test_ai_image_generation(ai_service, tmp_path):
     assert response.inference_time is not None
     assert isinstance(response.inference_time, float)
 
-    # Save the first generated image
     image = response.images[0]
-    assert image.image is not None  # base64 data
+    assert image.image is not None
     assert isinstance(image.random_seed, int)
     assert isinstance(image.index, int)
 
@@ -147,7 +141,6 @@ def test_ai_image_generation(ai_service, tmp_path):
     assert os.path.exists(saved_path)
     print(f"\nImage saved to: {saved_path}")
 
-    # Test with request object and custom parameters
     request = ImageGenerationRequest(
         prompt=prompt,
         model_name="SDXL1.0-base",
@@ -161,7 +154,6 @@ def test_ai_image_generation(ai_service, tmp_path):
     assert len(response.images) > 0
     assert response.inference_time is not None
 
-    # Save the second generated image
     image = response.images[0]
     assert image.image is not None
     assert isinstance(image.random_seed, int)
@@ -177,7 +169,6 @@ def test_ai_image_generation(ai_service, tmp_path):
 @pytest.mark.parametrize("model", SUPPORTED_IMAGE_MODELS)
 def test_ai_image_generation_models(ai_service, model, tmp_path):
     """Test image generation with different models."""
-    # Skip ControlNet models as they're tested separately
     if "ControlNet" in model:
         pytest.skip("ControlNet models are tested separately")
 
@@ -185,7 +176,7 @@ def test_ai_image_generation_models(ai_service, model, tmp_path):
     request = ImageGenerationRequest(
         prompt=prompt,
         model_name=model,
-        height=512,  # Using lower resolution to reduce costs
+        height=512,
         width=512,
         steps=20,
         num_images=1,
@@ -197,7 +188,6 @@ def test_ai_image_generation_models(ai_service, model, tmp_path):
     assert response.inference_time is not None
     assert isinstance(response.inference_time, float)
 
-    # Save the generated image
     image = response.images[0]
     assert image.image is not None
     assert isinstance(image.random_seed, int)
@@ -237,7 +227,6 @@ def test_ai_image_generation_controlnet(ai_service, model, controlnet_type, tmp_
         seed=5742320,
     )
 
-    # Print request data for debugging
     print("\nRequest data:")
     print(f"  Model: {model}")
     print(f"  ControlNet type: {controlnet_type}")
@@ -249,7 +238,6 @@ def test_ai_image_generation_controlnet(ai_service, model, controlnet_type, tmp_
         assert response.inference_time is not None
         assert isinstance(response.inference_time, float)
 
-        # Save the generated image
         image = response.images[0]
         assert image.image is not None
         assert isinstance(image.random_seed, int)

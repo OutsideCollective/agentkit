@@ -41,7 +41,7 @@ def test_billing_get_purchase_history(mock_request, mock_api_key):
             {
                 "amount": "100.00",
                 "timestamp": "2024-01-01T00:00:00Z",
-                "source": "stripe_purchase",  # Added required source field
+                "source": "stripe_purchase",
             }
         ]
     }
@@ -69,7 +69,6 @@ def test_billing_service_error_handling(mock_request, mock_api_key):
     with pytest.raises(requests.exceptions.HTTPError, match="403 Forbidden"):
         service.get_balance()
 
-    # Reset mock for testing another method
     mock_request.reset_mock()
     mock_request.side_effect = requests.exceptions.HTTPError("500 Internal Server Error")
 

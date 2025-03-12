@@ -1,6 +1,6 @@
-"""Models for Hyperbolic AI services.
+"""Types for Hyperbolic AI services.
 
-This module provides models for AI API communication.
+This module provides type definitions for AI API communication.
 """
 
 from pydantic import BaseModel, Field, field_validator

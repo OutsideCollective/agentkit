@@ -3,13 +3,13 @@
 import pytest
 import requests
 
-from coinbase_agentkit.action_providers.hyperboliclabs.ai.models import (
+from coinbase_agentkit.action_providers.hyperboliclabs.ai.service import AIService
+from coinbase_agentkit.action_providers.hyperboliclabs.ai.types import (
     AudioGenerationRequest,
     ChatCompletionRequest,
     ChatMessage,
     ImageGenerationRequest,
 )
-from coinbase_agentkit.action_providers.hyperboliclabs.ai.service import AIService
 from coinbase_agentkit.action_providers.hyperboliclabs.constants import (
     AI_SERVICES_BASE_URL,
     SUPPORTED_IMAGE_MODELS,
@@ -49,7 +49,6 @@ def test_ai_text_generation(mock_request, mock_api_key):
         },
     }
 
-    # Test with single user message
     request = ChatCompletionRequest(
         messages=[ChatMessage(role="user", content="Test prompt")],
         model=model,
@@ -61,7 +60,6 @@ def test_ai_text_generation(mock_request, mock_api_key):
     assert response.choices[0].message.content == "Generated text response"
     assert response.usage.total_tokens == 30
 
-    # Test with system and user messages
     request = ChatCompletionRequest(
         messages=[
             ChatMessage(role="system", content="You are a helpful assistant."),
@@ -80,7 +78,7 @@ def test_ai_text_generation(mock_request, mock_api_key):
 def test_ai_image_generation(mock_request, mock_api_key):
     """Test image generation with different parameters."""
     service = AIService(mock_api_key)
-    model = SUPPORTED_IMAGE_MODELS[0]  # Use the first supported model
+    model = SUPPORTED_IMAGE_MODELS[0]
 
     mock_request.return_value.json.return_value = {
         "images": [
@@ -93,7 +91,6 @@ def test_ai_image_generation(mock_request, mock_api_key):
         "inference_time": 1.5,
     }
 
-    # Test with basic parameters
     request = ImageGenerationRequest(
         prompt="Test prompt",
         model_name=model,
@@ -106,7 +103,6 @@ def test_ai_image_generation(mock_request, mock_api_key):
     assert response.images[0].random_seed == 12345
     assert response.inference_time == 1.5
 
-    # Test with all optional parameters
     request = ImageGenerationRequest(
         prompt="Test prompt with options",
         model_name=model,
@@ -119,7 +115,6 @@ def test_ai_image_generation(mock_request, mock_api_key):
         cfg_scale=7.5,
     )
 
-    # Update mock response for multiple images
     mock_request.return_value.json.return_value = {
         "images": [
             {
@@ -154,7 +149,6 @@ def test_ai_audio_generation(mock_request, mock_api_key):
         "duration": 3.5,
     }
 
-    # Test with basic parameters
     request = AudioGenerationRequest(
         text="Test text",
         speaker=speaker,
@@ -164,7 +158,6 @@ def test_ai_audio_generation(mock_request, mock_api_key):
     assert response.audio == "base64_encoded_audio_data"
     assert response.duration == 3.5
 
-    # Test with all optional parameters
     request = AudioGenerationRequest(
         text="Test text with options",
         language=language,
@@ -183,7 +176,6 @@ def test_ai_service_error_handling(mock_request, mock_api_key):
     """Test error handling in AI service."""
     service = AIService(mock_api_key)
 
-    # Test text generation error
     mock_request.side_effect = requests.exceptions.HTTPError(
         "400 Bad Request: Invalid model specified"
     )
@@ -194,7 +186,6 @@ def test_ai_service_error_handling(mock_request, mock_api_key):
         )
         service.generate_text(request)
 
-    # Test network error
     mock_request.side_effect = requests.exceptions.ConnectionError(
         "Failed to establish a connection"
     )
@@ -212,7 +203,6 @@ def test_ai_image_generation_invalid_model(mock_api_key):
     """Test image generation with invalid model."""
     service = AIService(mock_api_key)
 
-    # Test with invalid model
     request = ImageGenerationRequest(
         prompt="Test prompt",
         model_name="InvalidModel",

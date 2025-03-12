@@ -5,7 +5,7 @@ import time
 
 import pytest
 
-from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.models import (
+from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.types import (
     RentInstanceRequest,
     TerminateInstanceRequest,
 )

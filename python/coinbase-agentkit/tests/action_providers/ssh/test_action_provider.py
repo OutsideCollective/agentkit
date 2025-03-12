@@ -4,18 +4,7 @@ This module tests the initialization and basic functionality of the SshActionPro
 while specific action tests have been moved to their respective files.
 """
 
-from unittest import mock
-
-import pytest
-
 from coinbase_agentkit.action_providers.ssh.ssh_action_provider import SshActionProvider
-
-
-@pytest.fixture
-def ssh_provider():
-    """Create a provider instance for testing."""
-    with mock.patch("coinbase_agentkit.action_providers.ssh.ssh_action_provider.SSHConnectionPool"):
-        return SshActionProvider()
 
 
 def test_initialization(ssh_provider):

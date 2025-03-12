@@ -2,7 +2,7 @@
 
 from ..constants import MARKETPLACE_BASE_URL, MARKETPLACE_ENDPOINTS
 from ..service import Base
-from .models import (
+from .types import (
     AvailableInstancesResponse,
     InstanceHistoryResponse,
     RentedInstancesResponse,

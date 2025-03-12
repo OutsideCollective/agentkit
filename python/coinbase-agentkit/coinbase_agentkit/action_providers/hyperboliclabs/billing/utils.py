@@ -7,8 +7,8 @@ billing information from Hyperbolic services.
 from collections import defaultdict
 from datetime import datetime
 
-from ..marketplace.models import InstanceHistoryResponse
-from .models import (
+from ..marketplace.types import InstanceHistoryResponse
+from .types import (
     BillingPurchaseHistoryResponse,
 )
 

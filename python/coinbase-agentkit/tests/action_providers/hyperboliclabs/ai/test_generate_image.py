@@ -6,12 +6,12 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from coinbase_agentkit.action_providers.hyperboliclabs.ai.models import (
-    GeneratedImage,
-    ImageGenerationResponse,
-)
 from coinbase_agentkit.action_providers.hyperboliclabs.ai.schemas import (
     GenerateImageSchema,
+)
+from coinbase_agentkit.action_providers.hyperboliclabs.ai.types import (
+    GeneratedImage,
+    ImageGenerationResponse,
 )
 
 
@@ -32,51 +32,40 @@ def mock_response():
 
 def test_generate_image_success(provider, mock_ai_service, mock_response):
     """Test successful image generation."""
-    # Setup mock response
     mock_ai_service.generate_image.return_value = mock_response
 
-    # Mock the save_base64_data function
     with patch(
         "coinbase_agentkit.action_providers.hyperboliclabs.ai.action_provider.save_base64_data"
     ) as mock_save:
-        # Setup mock return value
         mock_file_path = "/tmp/generated_image_test.png"
         mock_save.return_value = mock_file_path
 
-        # Call the method with a dictionary
         args = {"prompt": "Test image prompt"}
         result = provider.generate_image(args)
 
-        # Verify the result is a string
         assert isinstance(result, str)
 
-        # Check that the output contains the file path
         assert "Image generation successful:" in result
         assert mock_file_path in result
 
-        # Verify the mock was called correctly
         mock_ai_service.generate_image.assert_called_once()
         request = mock_ai_service.generate_image.call_args[0][0]
         assert request.prompt == "Test image prompt"
-        assert request.model_name == "SDXL1.0-base"  # Default value
-        assert request.height == 1024  # Default value
-        assert request.width == 1024  # Default value
+        assert request.model_name == "SDXL1.0-base"
+        assert request.height == 1024
+        assert request.width == 1024
 
 
 def test_generate_image_with_custom_parameters(provider, mock_ai_service, mock_response):
     """Test image generation with custom parameters."""
-    # Setup mock response
     mock_ai_service.generate_image.return_value = mock_response
 
-    # Mock the save_base64_data function
     with patch(
         "coinbase_agentkit.action_providers.hyperboliclabs.ai.action_provider.save_base64_data"
     ) as mock_save:
-        # Setup mock return value
         mock_file_path = "/tmp/generated_image_test.png"
         mock_save.return_value = mock_file_path
 
-        # Call the method with custom parameters
         args = {
             "prompt": "Test image prompt",
             "model_name": "SD1.5",
@@ -87,14 +76,11 @@ def test_generate_image_with_custom_parameters(provider, mock_ai_service, mock_r
         }
         result = provider.generate_image(args)
 
-        # Verify the result is a string
         assert isinstance(result, str)
 
-        # Check that the output contains the file path
         assert "Image generation successful:" in result
         assert mock_file_path in result
 
-        # Verify the mock was called correctly
         request = mock_ai_service.generate_image.call_args[0][0]
         assert request.prompt == "Test image prompt"
         assert request.model_name == "SD1.5"
@@ -106,7 +92,6 @@ def test_generate_image_with_custom_parameters(provider, mock_ai_service, mock_r
 
 def test_generate_image_multiple_images(provider, mock_ai_service):
     """Test generation of multiple images."""
-    # Setup mock response with multiple images
     mock_response = ImageGenerationResponse(
         images=[
             GeneratedImage(
@@ -124,30 +109,24 @@ def test_generate_image_multiple_images(provider, mock_ai_service):
     )
     mock_ai_service.generate_image.return_value = mock_response
 
-    # Mock the save_base64_data function
     with patch(
         "coinbase_agentkit.action_providers.hyperboliclabs.ai.action_provider.save_base64_data"
     ) as mock_save:
-        # Setup mock return values for each image
         mock_file_paths = ["/tmp/generated_image_test_1.png", "/tmp/generated_image_test_2.png"]
         mock_save.side_effect = mock_file_paths
 
-        # Call the method with num_images=2
         args = {
             "prompt": "Test image prompt",
             "num_images": 2,
         }
         result = provider.generate_image(args)
 
-        # Verify the result is a string
         assert isinstance(result, str)
 
-        # Check that the output contains both file paths
         assert "Image generation successful:" in result
         assert mock_file_paths[0] in result
         assert mock_file_paths[1] in result
 
-        # Verify the mock was called correctly
         request = mock_ai_service.generate_image.call_args[0][0]
         assert request.prompt == "Test image prompt"
         assert request.num_images == 2
@@ -155,78 +134,64 @@ def test_generate_image_multiple_images(provider, mock_ai_service):
 
 def test_generate_image_schema_validation():
     """Test schema validation for generate_image."""
-    # Test with valid data
     valid_data = {"prompt": "Test image prompt"}
     schema = GenerateImageSchema(**valid_data)
     assert schema.prompt == "Test image prompt"
-    assert schema.model_name == "SDXL1.0-base"  # Default value
-    assert schema.height == 1024  # Default value
-    assert schema.width == 1024  # Default value
-    assert schema.steps == 30  # Default value
-    assert schema.num_images == 1  # Default value
-    assert schema.negative_prompt is None  # Default value
+    assert schema.model_name == "SDXL1.0-base"
+    assert schema.height == 1024
+    assert schema.width == 1024
+    assert schema.steps == 30
+    assert schema.num_images == 1
+    assert schema.negative_prompt is None
 
-    # Test with missing required field
     with pytest.raises(ValidationError):
         GenerateImageSchema()
 
-    # Test with empty prompt
     with pytest.raises(ValidationError):
         GenerateImageSchema(prompt="")
 
-    # Test with invalid values
     with pytest.raises(ValidationError):
-        GenerateImageSchema(prompt="Test", height=4000)  # height > 2048
+        GenerateImageSchema(prompt="Test", height=4000)
 
     with pytest.raises(ValidationError):
-        GenerateImageSchema(prompt="Test", width=32)  # width < 64
+        GenerateImageSchema(prompt="Test", width=32)
 
     with pytest.raises(ValidationError):
-        GenerateImageSchema(prompt="Test", steps=150)  # steps > 100
+        GenerateImageSchema(prompt="Test", steps=150)
 
     with pytest.raises(ValidationError):
-        GenerateImageSchema(prompt="Test", num_images=10)  # num_images > 4
+        GenerateImageSchema(prompt="Test", num_images=10)
 
 
 def test_generate_image_error(provider, mock_ai_service):
     """Test image generation with error."""
-    # Setup mock to raise exception
     mock_ai_service.generate_image.side_effect = Exception("API error")
 
-    # Call the method
     args = {"prompt": "Test image prompt"}
     result = provider.generate_image(args)
 
-    # Verify the result is a string
     assert isinstance(result, str)
     assert "Error: Image generation: API error" in result
 
 
 def test_generate_image_saves_to_file(provider, mock_ai_service, mock_response, tmpdir):
     """Test that image generation saves the output to a file."""
-    # Setup mock response
     mock_ai_service.generate_image.return_value = mock_response
 
-    # Mock the save_base64_data function
     with patch(
         "coinbase_agentkit.action_providers.hyperboliclabs.ai.action_provider.save_base64_data"
     ) as mock_save:
-        # Setup mock return value with tmpdir path
         mock_file_path = os.path.join(tmpdir, "generated_image_test.png")
         mock_save.return_value = mock_file_path
 
-        # Call the method
         args = {"prompt": "Test image prompt"}
         result = provider.generate_image(args)
 
-        # Verify the result is a string
         assert isinstance(result, str)
 
-        # Check that the output contains the file path
         assert "Image generation successful:" in result
         assert mock_file_path in result
 
-        # Verify save_base64_data was called with the correct arguments
         mock_save.assert_called_once()
         image_data, file_path_arg = mock_save.call_args[0]
         assert image_data == "base64_encoded_image_data"

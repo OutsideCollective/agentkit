@@ -11,18 +11,18 @@ from coinbase_agentkit.network import Network
 
 from ...action_decorator import create_action
 from ..action_provider import ActionProvider
-from .models import (
-    AudioGenerationRequest,
-    ChatCompletionRequest,
-    ChatMessage,
-    ImageGenerationRequest,
-)
 from .schemas import (
     GenerateAudioSchema,
     GenerateImageSchema,
     GenerateTextSchema,
 )
 from .service import AIService
+from .types import (
+    AudioGenerationRequest,
+    ChatCompletionRequest,
+    ChatMessage,
+    ImageGenerationRequest,
+)
 from .utils import save_base64_data, save_text
 
 
@@ -266,7 +266,6 @@ Important notes:
             bool: True if the network is supported, False otherwise.
 
         """
-        # Hyperbolic AI is a cloud service and works with any blockchain
         return True
 
 

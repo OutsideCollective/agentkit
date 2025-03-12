@@ -4,18 +4,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.action_provider import (
-    MarketplaceActionProvider,
-)
-from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.models import (
+from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.types import (
     TerminateInstanceResponse,
 )
-
-
-@pytest.fixture
-def provider(mock_api_key):
-    """Create HyperbolicMarketplaceActionProvider instance with test API key."""
-    return MarketplaceActionProvider(api_key=mock_api_key)
 
 
 def test_terminate_compute_success(provider):

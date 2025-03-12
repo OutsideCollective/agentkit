@@ -7,21 +7,6 @@ import pytest
 from coinbase_agentkit.action_providers.hyperboliclabs.settings.action_provider import (
     SettingsActionProvider,
 )
-from coinbase_agentkit.action_providers.hyperboliclabs.settings.service import SettingsService
-
-
-@pytest.fixture
-def settings(api_key: str):
-    """Create a Settings service instance for testing.
-
-    Args:
-        api_key: API key for authentication.
-
-    Returns:
-        Settings: A settings service instance initialized with the API key.
-
-    """
-    return SettingsService(api_key)
 
 
 @pytest.fixture
@@ -46,5 +31,4 @@ def random_eth_address():
         str: A random Ethereum address with 0x prefix.
 
     """
-    # Create a random 20 byte (40 hex char) address
     return "0x" + secrets.token_hex(20)

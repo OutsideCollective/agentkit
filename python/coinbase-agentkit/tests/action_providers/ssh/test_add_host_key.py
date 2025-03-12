@@ -10,34 +10,23 @@ from unittest import mock
 
 import pytest
 
-from coinbase_agentkit.action_providers.ssh.ssh_action_provider import SshActionProvider
-
 
 @pytest.fixture
 def temp_known_hosts():
     """Create a temporary known_hosts file for testing."""
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as temp_file:
-        # Write some sample entries
         temp_file.write("existing.example.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ==\n")
         temp_file.write("other.example.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHRVs==\n")
         temp_file_path = temp_file.name
 
     yield temp_file_path
 
-    # Clean up after tests
     if os.path.exists(temp_file_path):
         os.unlink(temp_file_path)
 
 
-@pytest.fixture
-def ssh_provider():
-    """Create a fresh SshActionProvider instance for tests."""
-    return SshActionProvider()
-
-
 def test_add_host_key_basic(ssh_provider, temp_known_hosts):
     """Test adding a new host key."""
-    # Call the method with a new host
     result = ssh_provider.ssh_add_host_key(
         {
             "host": "test.example.com",
@@ -46,11 +35,9 @@ def test_add_host_key_basic(ssh_provider, temp_known_hosts):
         }
     )
 
-    # Verify the result
     assert "successfully added" in result
     assert "Host key for 'test.example.com'" in result
 
-    # Check the file content
     with open(temp_known_hosts) as f:
         content = f.read()
 
@@ -59,7 +46,6 @@ def test_add_host_key_basic(ssh_provider, temp_known_hosts):
 
 def test_add_host_key_update_existing(ssh_provider, temp_known_hosts):
     """Test updating an existing host key."""
-    # Call the method with an existing host
     result = ssh_provider.ssh_add_host_key(
         {
             "host": "existing.example.com",
@@ -68,11 +54,9 @@ def test_add_host_key_update_existing(ssh_provider, temp_known_hosts):
         }
     )
 
-    # Verify the result
     assert "updated in" in result
     assert "Host key for 'existing.example.com'" in result
 
-    # Check the file content
     with open(temp_known_hosts) as f:
         content = f.read()
 
@@ -81,7 +65,6 @@ def test_add_host_key_update_existing(ssh_provider, temp_known_hosts):
 
 def test_add_host_key_with_custom_port(ssh_provider, temp_known_hosts):
     """Test adding a host key with a non-standard port."""
-    # Call the method with a custom port
     result = ssh_provider.ssh_add_host_key(
         {
             "host": "[port.example.com]:2222",
@@ -90,21 +73,17 @@ def test_add_host_key_with_custom_port(ssh_provider, temp_known_hosts):
         }
     )
 
-    # Verify the result
     assert "successfully added" in result
     assert "Host key for '[port.example.com]:2222'" in result
 
-    # Check the file content
     with open(temp_known_hosts) as f:
         content = f.read()
 
-    # The entry should contain the exact host format we provided
     assert "[port.example.com]:2222 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ==" in content
 
 
 def test_add_host_key_with_custom_key_type(ssh_provider, temp_known_hosts):
     """Test adding a host key with a custom key type."""
-    # Call the method with a custom key type
     result = ssh_provider.ssh_add_host_key(
         {
             "host": "keytype.example.com",
@@ -114,11 +93,9 @@ def test_add_host_key_with_custom_key_type(ssh_provider, temp_known_hosts):
         }
     )
 
-    # Verify the result
     assert "successfully added" in result
     assert "Host key for 'keytype.example.com'" in result
 
-    # Check the file content
     with open(temp_known_hosts) as f:
         content = f.read()
 
@@ -127,11 +104,9 @@ def test_add_host_key_with_custom_key_type(ssh_provider, temp_known_hosts):
 
 def test_add_host_key_create_file(ssh_provider):
     """Test adding a host key when the known_hosts file doesn't exist."""
-    # Use a non-existent file path
     with tempfile.TemporaryDirectory() as temp_dir:
         new_file_path = os.path.join(temp_dir, "new_known_hosts")
 
-        # Call the method
         result = ssh_provider.ssh_add_host_key(
             {
                 "host": "new.example.com",
@@ -140,11 +115,9 @@ def test_add_host_key_create_file(ssh_provider):
             }
         )
 
-        # Verify the result
         assert "successfully added" in result
         assert "Host key for 'new.example.com'" in result
 
-        # Check that the file was created with the right content
         assert os.path.exists(new_file_path)
         with open(new_file_path) as f:
             content = f.read()
@@ -154,33 +127,26 @@ def test_add_host_key_create_file(ssh_provider):
 
 def test_add_host_key_invalid_params(ssh_provider):
     """Test adding a host key with invalid parameters."""
-    # Call the method with missing required parameters
     result = ssh_provider.ssh_add_host_key(
         {
-            # Missing 'host' and 'key'
             "key_type": "ssh-rsa",
         }
     )
 
-    # Verify the result
     assert "Invalid input parameters" in result
 
 
 def test_add_host_key_file_error(ssh_provider):
     """Test handling file access errors."""
-    # Mock the necessary functions using context managers
     with (
         mock.patch("os.path.exists") as mock_exists,
         mock.patch("os.makedirs"),
         mock.patch("builtins.open") as mock_open,
     ):
-        # Mock os.path.exists to return True
         mock_exists.return_value = True
 
-        # Mock open to raise an OSError
         mock_open.side_effect = OSError("Permission denied")
 
-        # Call the method
         result = ssh_provider.ssh_add_host_key(
             {
                 "host": "error.example.com",
@@ -188,6 +154,5 @@ def test_add_host_key_file_error(ssh_provider):
             }
         )
 
-    # Verify the result
     assert "Error" in result
     assert "Error: File operation:" in result

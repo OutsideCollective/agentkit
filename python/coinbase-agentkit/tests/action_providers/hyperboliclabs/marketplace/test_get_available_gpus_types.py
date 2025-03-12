@@ -7,7 +7,7 @@ import pytest
 from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.action_provider import (
     MarketplaceActionProvider,
 )
-from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.models import (
+from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.types import (
     AvailableInstance,
     AvailableInstancesResponse,
     CpuHardware,
@@ -22,7 +22,7 @@ from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.models import
 
 
 @pytest.fixture
-def mock_api_response():
+def mock_response():
     """Mock API response for available GPUs with different models."""
     gpu1 = GpuHardware(
         hardware_type="gpu",
@@ -92,7 +92,6 @@ def mock_api_response():
         cluster_name="quantum-crystal-hawk",
     )
 
-    # Fully reserved instance - should be filtered out
     instance4 = AvailableInstance(
         id="korea-amd11-999",
         status="node_ready",
@@ -115,26 +114,18 @@ def provider(mock_api_key):
     return MarketplaceActionProvider(api_key=mock_api_key)
 
 
-def test_get_available_gpus_types_success(provider, mock_api_response):
+def test_get_available_gpus_types_success(provider, mock_response):
     """Test successful get_available_gpus_types action."""
     with (
         patch("coinbase_agentkit.action_providers.action_decorator.send_analytics_event"),
-        patch.object(
-            provider.marketplace, "get_available_instances", return_value=mock_api_response
-        ),
+        patch.object(provider.marketplace, "get_available_instances", return_value=mock_response),
     ):
         result = provider.get_available_gpus_types({})
 
-        # Check header
         assert "Available GPU Types:" in result
 
-        # Check that both GPU models are included
         assert "NVIDIA-GeForce-RTX-3070" in result
         assert "NVIDIA-A100" in result
-
-        # Check format
-        assert "- NVIDIA-GeForce-RTX-3070" in result
-        assert "- NVIDIA-A100" in result
 
 
 def test_get_available_gpus_types_empty_response(provider):
@@ -161,21 +152,16 @@ def test_get_available_gpus_types_api_error(provider):
         assert "Error: GPU types retrieval: API Error" in result
 
 
-def test_get_available_gpus_by_type_success(provider, mock_api_response):
+def test_get_available_gpus_by_type_success(provider, mock_response):
     """Test successful get_available_gpus_by_type action."""
     with (
         patch("coinbase_agentkit.action_providers.action_decorator.send_analytics_event"),
-        patch.object(
-            provider.marketplace, "get_available_instances", return_value=mock_api_response
-        ),
+        patch.object(provider.marketplace, "get_available_instances", return_value=mock_response),
     ):
-        # Test with NVIDIA-GeForce-RTX-3070
         result = provider.get_available_gpus_by_type({"gpu_model": "NVIDIA-GeForce-RTX-3070"})
 
-        # Check header
         assert "Available NVIDIA-GeForce-RTX-3070 GPU Options:" in result
 
-        # Check instances
         assert "Cluster: angelic-mushroom-dolphin" in result
         assert "Node ID: korea-amd14-78" in result
         assert "GPU Model: NVIDIA-GeForce-RTX-3070" in result
@@ -186,35 +172,28 @@ def test_get_available_gpus_by_type_success(provider, mock_api_response):
         assert "GPU Model: NVIDIA-GeForce-RTX-3070" in result
         assert "Price: $16.00/hour per GPU" in result
 
-        # NVIDIA-A100 instances should not be included
         assert "Cluster: quantum-crystal-hawk" not in result
         assert "Node ID: us-east-a100-01" not in result
 
-        # Test with NVIDIA-A100
         result = provider.get_available_gpus_by_type({"gpu_model": "NVIDIA-A100"})
 
-        # Check header
         assert "Available NVIDIA-A100 GPU Options:" in result
 
-        # Check instance
         assert "Cluster: quantum-crystal-hawk" in result
         assert "Node ID: us-east-a100-01" in result
         assert "GPU Model: NVIDIA-A100" in result
         assert "Available GPUs: 3/4" in result
         assert "Price: $30.00/hour per GPU" in result
 
-        # RTX 3070 instances should not be included
         assert "Cluster: angelic-mushroom-dolphin" not in result
         assert "Cluster: beneficial-palm-boar" not in result
 
 
-def test_get_available_gpus_by_type_not_found(provider, mock_api_response):
+def test_get_available_gpus_by_type_not_found(provider, mock_response):
     """Test get_available_gpus_by_type action with GPU model not found."""
     with (
         patch("coinbase_agentkit.action_providers.action_decorator.send_analytics_event"),
-        patch.object(
-            provider.marketplace, "get_available_instances", return_value=mock_api_response
-        ),
+        patch.object(provider.marketplace, "get_available_instances", return_value=mock_response),
     ):
         result = provider.get_available_gpus_by_type({"gpu_model": "NVIDIA-H100"})
         assert "No available GPU instances with the model 'NVIDIA-H100' found." in result

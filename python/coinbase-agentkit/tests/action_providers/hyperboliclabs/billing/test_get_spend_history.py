@@ -2,12 +2,7 @@
 
 from unittest.mock import Mock
 
-import pytest
-
-from coinbase_agentkit.action_providers.hyperboliclabs.billing import (
-    BillingActionProvider,
-)
-from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.models import (
+from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.types import (
     GpuHardware,
     HardwareInfo,
     InstanceHistoryEntry,
@@ -16,15 +11,8 @@ from coinbase_agentkit.action_providers.hyperboliclabs.marketplace.models import
 )
 
 
-@pytest.fixture
-def provider(mock_api_key):
-    """Create HyperbolicBillingActionProvider instance with test API key."""
-    return BillingActionProvider(api_key=mock_api_key)
-
-
 def test_get_spend_history_success(provider):
     """Test successful get_spend_history action."""
-    # Create instance history entries
     instance_entries = [
         InstanceHistoryEntry(
             instance_name="instance-123",
@@ -66,15 +54,12 @@ def test_get_spend_history_success(provider):
         ),
     ]
 
-    # Mock the service method
     provider.marketplace.get_instance_history = Mock(
         return_value=InstanceHistoryResponse(instance_history=instance_entries)
     )
 
-    # Call the method
     result = provider.get_spend_history({})
 
-    # Check the response formatting
     assert "=== GPU Rental Spending Analysis ===" in result
     assert "Instance Rentals (showing 5 most recent):" in result
     assert "- instance-123:" in result
@@ -95,39 +80,32 @@ def test_get_spend_history_success(provider):
 
 def test_get_spend_history_empty(provider):
     """Test get_spend_history action with empty history."""
-    # Mock the service method
     provider.marketplace.get_instance_history = Mock(
         return_value=InstanceHistoryResponse(instance_history=[])
     )
 
-    # Call the method
     result = provider.get_spend_history({})
     assert "No rental history found." in result
 
 
 def test_get_spend_history_api_error(provider):
     """Test get_spend_history action with API error."""
-    # Setup mock to raise exception
     provider.marketplace.get_instance_history = Mock(side_effect=Exception("API Error"))
 
-    # Call the method
     result = provider.get_spend_history({})
     assert "Error: Spend history retrieval: API Error" in result
 
 
 def test_get_spend_history_invalid_response(provider):
     """Test get_spend_history action with invalid response format."""
-    # Mock the service method to return an invalid response
     provider.marketplace.get_instance_history = Mock(side_effect=Exception("Invalid response"))
 
-    # Call the method
     result = provider.get_spend_history({})
     assert "Error: Spend history retrieval: Invalid response" in result
 
 
 def test_get_spend_history_malformed_instance(provider):
     """Test get_spend_history action with malformed instance data."""
-    # Create a malformed instance entry
     instance_entry = InstanceHistoryEntry(
         instance_name="instance-123",
         started_at="2024-01-15T12:00:00Z",
@@ -147,15 +125,12 @@ def test_get_spend_history_malformed_instance(provider):
         ),
     )
 
-    # Mock the service method
     provider.marketplace.get_instance_history = Mock(
         return_value=InstanceHistoryResponse(instance_history=[instance_entry])
     )
 
-    # Call the method
     result = provider.get_spend_history({})
 
-    # Check that defaults are used
     assert "- instance-123:" in result
     assert "GPU: Unknown GPU (Count: 0)" in result
     assert "Duration: 3600 seconds" in result

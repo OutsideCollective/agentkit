@@ -9,9 +9,9 @@ from typing import Any
 from ....network import Network
 from ...action_decorator import create_action
 from ..action_provider import ActionProvider
-from .models import WalletLinkRequest
 from .schemas import LinkWalletAddressSchema
 from .service import SettingsService
+from .types import WalletLinkRequest
 from .utils import format_wallet_link_response
 
 

@@ -2,7 +2,7 @@
 
 import os
 
-from .models import (
+from .types import (
     AvailableInstance,
     NodeRental,
     RentInstanceResponse,

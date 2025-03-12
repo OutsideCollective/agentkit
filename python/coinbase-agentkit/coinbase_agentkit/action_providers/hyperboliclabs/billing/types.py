@@ -1,7 +1,6 @@
-"""Models for Hyperbolic billing services.
+"""Types for Hyperbolic billing operations.
 
-This module provides models for interacting with Hyperbolic billing services.
-It includes models for balance, purchase history, and instance history.
+This module provides type definitions for billing API communication.
 """
 
 from typing import Any

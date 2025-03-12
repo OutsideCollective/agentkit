@@ -1,7 +1,6 @@
-"""Models for Hyperbolic settings services.
+"""Types for Hyperbolic settings operations.
 
-This module provides models for interacting with Hyperbolic settings services.
-It includes models for wallet linking operations.
+This module provides type definitions for settings API communication.
 """
 
 from pydantic import BaseModel, Field

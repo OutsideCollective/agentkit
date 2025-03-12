@@ -4,7 +4,7 @@ This module provides utility functions for formatting and processing
 settings information from Hyperbolic services.
 """
 
-from .models import WalletLinkResponse
+from .types import WalletLinkResponse
 
 
 def format_wallet_link_response(response_data: WalletLinkResponse) -> str:

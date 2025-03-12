@@ -1,4 +1,7 @@
-"""Pydantic models for Hyperbolic Marketplace API requests and responses."""
+"""Types for Hyperbolic marketplace operations.
+
+This module provides type definitions for marketplace API communication.
+"""
 
 from typing import Any
 
