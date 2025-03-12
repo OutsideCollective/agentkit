@@ -2,4 +2,7 @@
 
 from .hyperbolic_action_provider import HyperbolicActionProvider, hyperbolic_action_provider
 
-__all__ = ["HyperbolicActionProvider", "hyperbolic_action_provider"]
+__all__ = [
+    "HyperbolicActionProvider",
+    "hyperbolic_action_provider",
+]

@@ -508,26 +508,25 @@ Important notes:
 This tool adds an SSH host key to the local known_hosts file.
 
 Required inputs:
-- host: Hostname or IP address of the server
+- host: Hostname or IP of server. For non-standard ports, use "[hostname]:port".
+  Example: "[example.com]:2222"
 - key: The SSH host key to add
+- key_type: Type of SSH key (default: ssh-rsa, e.g., ssh-ed25519)
 
 Optional inputs:
-- key_type: The type of SSH key (default: ssh-rsa)
-- port: SSH port number (default: 22)
-- known_hosts_file: Path to the known_hosts file (default: ~/.ssh/known_hosts)
+- known_hosts_file: Path to known_hosts file (default: ~/.ssh/known_hosts)
 
 Example successful response:
-    Host key for 'example.com:22' successfully added to /home/user/.ssh/known_hosts
+    Host key for 'example.com' successfully added to ~/.ssh/known_hosts
+    Host key for '[example.com]:2222' successfully added to ~/.ssh/known_hosts
 
 Example error response:
     Error: Unable to access known_hosts file
-    Error: Failed to write to known_hosts file
 
 Important notes:
 - This tool modifies the local known_hosts file
-- The host key should be properly formatted (typically obtained from the server)
-- If the known_hosts file doesn't exist, it will be created
-- Adding a host key prevents "unknown host" prompts when connecting
+- Host keys are typically obtained from SSH connection errors
+- For non-standard ports, OpenSSH format [hostname]:port is required
 - Existing entries for the same host will be updated (not duplicated)
 """,
         schema=AddHostKeySchema,
@@ -547,11 +546,9 @@ Important notes:
             host = validated_args.host
             key = validated_args.key
             key_type = validated_args.key_type
-            port = validated_args.port
             known_hosts_file = os.path.expanduser(validated_args.known_hosts_file)
-
-            host_entry = host if port == 22 else f"[{host}]:{port}"
-
+            
+            host_entry = host
             entry = f"{host_entry} {key_type} {key}\n"
 
             known_hosts_dir = os.path.dirname(known_hosts_file)

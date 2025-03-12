@@ -228,13 +228,18 @@ def test_ssh_connect_unknown_host_key(ssh_provider):
     # Access the mock pool from the fixture
     mock_pool = ssh_provider.connection_pool
 
-    # Mock the key
-    mock_key = mock.Mock()
-    mock_key.get_name.return_value = "ssh-rsa"
-    mock_key.get_base64.return_value = "AAAAB3NzaC1yc2EAAAADAQABAAABAQ=="
+    # Create a mock error message
+    error_message = (
+        "Host key verification failed for example.com. Server sent:\n"
+        "  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ==\n\n"
+        "To add this host key, use the ssh_add_host_key action with the following parameters:\n"
+        "  host: example.com\n"
+        "  key: AAAAB3NzaC1yc2EAAAADAQABAAABAQ==\n"
+        "  key_type: ssh-rsa"
+    )
 
     # Simulate an unknown host key error
-    mock_pool.create_connection.side_effect = UnknownHostKeyError("example.com", mock_key)
+    mock_pool.create_connection.side_effect = UnknownHostKeyError(error_message)
 
     # Call the method
     result = ssh_provider.ssh_connect(
@@ -248,12 +253,12 @@ def test_ssh_connect_unknown_host_key(ssh_provider):
 
     # Verify the result contains useful information
     assert "Host key verification failed" in result
-    assert "example.com" in result
-    assert "ssh-rsa" in result
-    assert "AAAAB3NzaC1yc2EAAAADAQABAAABAQ==" in result
-    assert "ssh_add_host_key" in result
+    assert "Host key verification failed for example.com" in result
+    assert "  ssh-rsa " in result
+    assert "  key: AAAAB3NzaC1yc2EAAAADAQABAAABAQ==" in result
+    assert "ssh_add_host_key action" in result
 
     # Verify it includes the parameters needed to add the key
-    assert "host: example.com" in result
-    assert "key: AAAAB3NzaC1yc2EAAAADAQABAAABAQ==" in result
-    assert "key_type: ssh-rsa" in result
+    assert "  host: example.com" in result
+    assert "  key: AAAAB3NzaC1yc2EAAAADAQABAAABAQ==" in result
+    assert "  key_type: ssh-rsa" in result
