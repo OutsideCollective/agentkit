@@ -22,7 +22,7 @@ lint:
 
 .PHONY: lint-fix
 lint-fix:
-	poetry run ruff check . --fix --unsafe-fixes
+	poetry run ruff check . --fix
 
 .PHONY: docs
 docs:
@@ -34,7 +34,7 @@ local-docs: docs
 
 .PHONY: test
 test:
-	poetry run pytest
+	poetry run pytest -m 'not e2e'
 
 .PHONY: test-e2e
 test-e2e:
