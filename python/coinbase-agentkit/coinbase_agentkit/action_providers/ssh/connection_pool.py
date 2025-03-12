@@ -25,7 +25,6 @@ class SSHConnectionPool:
         """
         self.connections = {}
         self.max_connections = max_connections
-        # Store connection parameters for reconnection
         self.connection_params = {}
 
     def has_connection(self, connection_id: str) -> bool:
@@ -54,7 +53,6 @@ class SSHConnectionPool:
 
         """
         if connection_id not in self.connections:
-            # If we have params stored but no connection, recreate it
             params = self._get_connection_params(connection_id)
             if params:
                 # TODO: check for available slots
@@ -90,25 +88,19 @@ class SSHConnectionPool:
             ValueError: If the connection parameters are invalid
 
         """
-        # Close any idle connections first
         self.close_idle_connections()
 
-        # Check if we're at the connection limit
         if len(self.connections) >= self.max_connections:
             raise SSHConnectionError(f"Connection limit reached ({self.max_connections})")
 
         try:
-            # Store connection parameters for reconnection
             stored_params = self._set_connection_params(params)
-
-            # Create new connection using the parameters object
             connection = SSHConnection(stored_params)
 
             self.connections[params.connection_id] = connection
 
             return connection
         except ValueError as e:
-            # Remove stored parameters on validation error
             self._remove_connection_params(params.connection_id)
             raise ValueError(
                 f"Invalid connection parameters for '{params.connection_id}': {e!s}"
@@ -139,8 +131,6 @@ class SSHConnectionPool:
 
         """
         self.close_connection(connection_id)
-
-        # Also remove stored parameters
         self._remove_connection_params(connection_id)
 
     def close_all_connections(self) -> None:

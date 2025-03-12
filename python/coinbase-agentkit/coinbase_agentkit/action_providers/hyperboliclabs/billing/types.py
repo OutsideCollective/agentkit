@@ -39,9 +39,7 @@ class CpuHardware(BaseModel):
 class StorageHardware(BaseModel):
     """Storage hardware information."""
 
-    hardware_type: str = Field(
-        None, description="Type of hardware"
-    )  # Can be "storage" or "hardwaretype_unknown"
+    hardware_type: str = Field(None, description="Type of hardware")
     capacity: float = Field(..., description="Storage capacity")
 
 

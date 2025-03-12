@@ -31,9 +31,7 @@ class CpuHardware(BaseModel):
 class StorageHardware(BaseModel):
     """Storage hardware information."""
 
-    hardware_type: str = Field(
-        None, description="Type of hardware"
-    )  # Can be "storage" or "hardwaretype_unknown"
+    hardware_type: str = Field(None, description="Type of hardware")
     capacity: float = Field(..., description="Storage capacity")
 
 
@@ -198,11 +196,8 @@ class TerminateInstanceRequest(BaseModel):
 class TerminateInstanceResponse(BaseModel):
     """Response from terminate instance API endpoint."""
 
-    # For success responses
     status: str | None = Field(None, description="Response status")
     message: str | None = Field(None, description="Optional response message")
-
-    # For error responses
     error_code: int | None = Field(None, description="Error code for failed operations")
 
     @property

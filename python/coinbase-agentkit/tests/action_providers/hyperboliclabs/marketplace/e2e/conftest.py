@@ -40,7 +40,6 @@ def rented_instance(marketplace, request):
         Exception: For other failures during rental or cleanup
 
     """
-    # Check if auto-termination should be disabled
     disable_auto_terminate = False
     marker = request.node.get_closest_marker("disable_auto_terminate")
     if marker:
@@ -49,11 +48,9 @@ def rented_instance(marketplace, request):
             "\nWARNING: Auto-termination is disabled. Remember to manually terminate the instance!"
         )
 
-    # First, get available instances to find the cheapest one
     available = marketplace.get_available_instances()
     assert len(available.instances) > 0, "No instances available to rent"
 
-    # Print all available instances
     print("\nAll available instances:")
     for instance in available.instances:
         print(f"\nCluster: {instance.cluster_name}")
@@ -68,7 +65,6 @@ def rented_instance(marketplace, request):
             for gpu in instance.hardware.gpus:
                 print(f"GPU Model: {gpu.model}")
 
-    # Find the cheapest instance in North America
     def is_na_instance(instance):
         """Check if instance is in North America based on node name patterns."""
         node_id = instance.id.lower()
@@ -84,7 +80,6 @@ def rented_instance(marketplace, request):
         len(available_instances) > 0
     ), "No unreserved North American instances with available GPUs found"
 
-    # Simply select the cheapest instance
     selected_instance = min(available_instances, key=lambda i: i.pricing.price.amount)
 
     print("\nSelected North American instance:")
@@ -105,7 +100,6 @@ def rented_instance(marketplace, request):
         assert response.status == "success"
         assert response.instance_name is not None, "API returned success but no instance name"
 
-        # Return the instance name and original response
         instance_id = response.instance_name
 
         yield instance_id, response
@@ -144,14 +138,12 @@ def wait_for_termination(
 
     """
     for attempt in range(max_retries):
-        # Attempt termination
         terminate_request = TerminateInstanceRequest(id=instance_id)
         terminate_response = marketplace.terminate_instance(terminate_request)
         assert (
             terminate_response.status == "success"
         ), f"Termination failed: {terminate_response.message}"
 
-        # Wait and check status
         time.sleep(wait_seconds)
         rented = marketplace.get_rented_instances()
         still_running = [

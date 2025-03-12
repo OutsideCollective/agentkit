@@ -21,10 +21,7 @@ class WalletLinkResponse(BaseModel):
     or an error response with {"error_code": int, "message": str}
     """
 
-    # For success responses
     success: bool | None = Field(None, description="Whether the operation was successful")
-
-    # For error responses
     error_code: int | None = Field(None, description="Error code for failed operations")
     message: str | None = Field(None, description="Response message or error description")
 
