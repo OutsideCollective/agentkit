@@ -81,7 +81,7 @@ To add new SSH actions:
 
 ## Prompts
 
-### *Please show my hyperbolic gpu instances*
+### *please show my hyperbolic gpu instances*
 
 <details>
 <summary>Tool Output</summary>
@@ -119,7 +119,7 @@ If you would like me to SSH into this instance, please provide the password for 
 ```
 </details>
 
-### *Please open an ssh connection to my hyperbolic gpu instance using /Users/chris/.ssh/hyperbolic*
+### *please open an ssh connection to my hyperbolic gpu instance using /Users/chris/.ssh/hyperbolic*
 
 <details>
 <summary>Tool Output</summary>
@@ -158,7 +158,7 @@ You can now execute commands on the instance. If you need to run specific comman
 ```
 </details>
 
-### *Please run `ls -lah` on my hyperbolic gpu instance*
+### *please run `ls -lah` on my hyperbolic gpu instance*
 
 <details>
 <summary>Tool Output</summary>
@@ -200,7 +200,7 @@ If you need to run more commands or require further assistance, just let me know
 ```
 </details>
 
-### *Please show my hyperbolic gpu instance ssh connection status*
+### *please show my hyperbolic gpu instance ssh connection status*
 
 <details>
 <summary>Tool Output</summary>
@@ -230,7 +230,7 @@ If you need any further assistance or commands to be executed, feel free to ask!
 ```
 </details>
 
-### *Please list open ssh connections*
+### *please list open ssh connections*
 
 <details>
 <summary>Tool Output</summary>
@@ -259,7 +259,7 @@ If you need any further actions or information, just let me know!
 ```
 </details>
 
-### *Please upload from my local /Users/chris/hello.txt to /home/ubuntu/hello.txt*
+### *please upload from my local /Users/chris/hello.txt to /home/ubuntu/hello.txt*
 
 <details>
 <summary>Tool Output</summary>
@@ -281,7 +281,7 @@ If you need further assistance or have more tasks, feel free to ask!
 ```
 </details>
 
-### *Please run `cat hello.txt`*
+### *please run `cat hello.txt`*
 
 <details>
 <summary>Tool Output</summary>
@@ -307,7 +307,7 @@ If you have any more commands to run or need further assistance, just let me kno
 ```
 </details>
 
-### *Please run `echo 'fizz' > buzz.txt`*
+### *please run `echo 'fizz' > buzz.txt`*
 
 <details>
 <summary>Tool Output</summary>
@@ -328,7 +328,7 @@ If you need to check the contents of **buzz.txt** or perform any other actions, 
 ```
 </details>
 
-### *Please download buzz.txt to /Users/chris/buzz.txt*
+### *please download buzz.txt to /Users/chris/buzz.txt*
 
 <details>
 <summary>Tool Output</summary>
@@ -350,7 +350,7 @@ If you need any further assistance or have more tasks, feel free to ask!
 ```
 </details>
 
-### *Please close all ssh connections*
+### *please close all ssh connections*
 
 <details>
 <summary>Tool Output</summary>
