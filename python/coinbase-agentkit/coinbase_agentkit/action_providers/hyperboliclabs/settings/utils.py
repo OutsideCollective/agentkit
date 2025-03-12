@@ -19,12 +19,12 @@ def format_wallet_link_response(response_data: WalletLinkResponse, wallet_addres
 
     """
     output = []
-    
+
     output.append(response_data.model_dump_json(indent=2))
-    
+
     if response_data.success is True:
         output.append(f"wallet_address: {wallet_address}")
-    
+
     hyperbolic_address = "0xd3cB24E0Ba20865C530831C85Bd6EbC25f6f3B60"
     next_steps = (
         "\nNext Steps:\n"

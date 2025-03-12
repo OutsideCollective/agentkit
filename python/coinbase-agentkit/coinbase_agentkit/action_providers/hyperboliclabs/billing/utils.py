@@ -26,8 +26,10 @@ def calculate_duration_seconds(start_time: str, end_time: str) -> float:
     """
     if not start_time or not end_time:
         return 0.0
-        
-    start = datetime.fromisoformat(start_time.replace("Z", "+00:00") if "Z" in start_time else start_time)
+
+    start = datetime.fromisoformat(
+        start_time.replace("Z", "+00:00") if "Z" in start_time else start_time
+    )
     end = datetime.fromisoformat(end_time.replace("Z", "+00:00") if "Z" in end_time else end_time)
     duration = end - start
     return duration.total_seconds()
@@ -77,21 +79,23 @@ def format_spend_history(instance_history: InstanceHistoryResponse, limit: int =
 
     for instance in instance_history.instance_history:
         has_complete_time_data = instance.started_at and instance.terminated_at
-        
+
         duration_seconds = 0
         duration_hours = 0
         cost = 0
-        
+
         if has_complete_time_data:
-            duration_seconds = calculate_duration_seconds(instance.started_at, instance.terminated_at)
+            duration_seconds = calculate_duration_seconds(
+                instance.started_at, instance.terminated_at
+            )
             duration_hours = duration_seconds / 3600.0
             cost = (duration_hours * instance.price.amount) / 100.0
             total_cost += cost
-        
+
         gpu_models = []
         if instance.hardware and instance.hardware.gpus and len(instance.hardware.gpus) > 0:
             gpu_models = [gpu.model for gpu in instance.hardware.gpus if gpu.model]
-            
+
         gpu_model = ", ".join(gpu_models) if gpu_models else "Unknown GPU"
         gpu_count = instance.gpu_count or 0
 
@@ -99,7 +103,7 @@ def format_spend_history(instance_history: InstanceHistoryResponse, limit: int =
             if gpu_models:
                 gpu_count_per_model = gpu_count / len(gpu_models) if len(gpu_models) > 0 else 0
                 cost_per_model = cost / len(gpu_models) if len(gpu_models) > 0 else 0
-                
+
                 for model in gpu_models:
                     gpu_stats[model]["count"] += gpu_count_per_model
                     gpu_stats[model]["total_cost"] += cost_per_model
@@ -115,7 +119,7 @@ def format_spend_history(instance_history: InstanceHistoryResponse, limit: int =
             "gpu_count": gpu_count,
             "duration_seconds": int(duration_seconds) if has_complete_time_data else None,
             "cost": round(cost, 2) if has_complete_time_data else None,
-            "has_complete_time_data": has_complete_time_data
+            "has_complete_time_data": has_complete_time_data,
         }
         instances_summary.append(summary)
 
@@ -125,8 +129,8 @@ def format_spend_history(instance_history: InstanceHistoryResponse, limit: int =
     for instance in instances_summary[:limit]:
         output.append(f"- {instance['name']}:")
         output.append(f"  GPU: {instance['gpu_model']} (Count: {instance['gpu_count']})")
-        
-        if instance['has_complete_time_data']:
+
+        if instance["has_complete_time_data"]:
             output.append(f"  Duration: {instance['duration_seconds']} seconds")
             output.append(f"  Cost: ${instance['cost']:.2f}")
         else:

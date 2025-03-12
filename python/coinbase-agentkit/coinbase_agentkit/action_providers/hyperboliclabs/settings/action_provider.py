@@ -85,7 +85,7 @@ Important notes:
         try:
             request = WalletLinkRequest(address=validated_args.address)
             response = self.settings.link_wallet(request)
-            
+
             return format_wallet_link_response(response, validated_args.address)
 
         except Exception as e:

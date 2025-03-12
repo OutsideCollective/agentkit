@@ -235,7 +235,7 @@ def test_get_spend_history_missing_hardware(provider):
             hardware=HardwareInfo(
                 gpus=[
                     GpuHardware(hardware_type="gpu", model="NVIDIA A100"),
-                    GpuHardware(hardware_type="gpu", model="NVIDIA V100")
+                    GpuHardware(hardware_type="gpu", model="NVIDIA V100"),
                 ]
             ),
             price=Price(amount=2500.0, period="hourly"),
@@ -245,11 +245,9 @@ def test_get_spend_history_missing_hardware(provider):
             started_at="2024-01-15T12:00:00Z",
             terminated_at="2024-01-15T13:00:00Z",
             gpu_count=1,
-            hardware=HardwareInfo(
-                gpus=[GpuHardware(hardware_type="gpu", model="NVIDIA A100")]
-            ),
+            hardware=HardwareInfo(gpus=[GpuHardware(hardware_type="gpu", model="NVIDIA A100")]),
             price=Price(amount=2500.0, period="hourly"),
-        )
+        ),
     ]
 
     provider.marketplace.get_instance_history = Mock(
