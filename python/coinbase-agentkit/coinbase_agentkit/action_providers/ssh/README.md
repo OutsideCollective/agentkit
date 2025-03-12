@@ -16,20 +16,21 @@ ssh/
 # From python/coinbase-agentkit/
 tests/action_providers/ssh/
 ├── conftest.py               # Test configuration
-├── test_ssh_connect.py       # Test SSH connection
-├── test_ssh_execute.py       # Test remote command execution
-├── test_ssh_status.py        # Test connection status checks
-├── test_ssh_disconnect.py    # Test disconnection
-├── test_ssh_keys.py          # Test SSH key handling
-├── test_ssh_upload.py        # Test file uploads via SFTP
-├── test_ssh_download.py      # Test file downloads via SFTP
-├── test_ssh_sftp.py          # Test SFTP operations
-├── test_remote_shell.py      # Test remote shell commands
+├── test_action_provider.py   # Test action provider functionality
 ├── test_add_host_key.py      # Test adding host keys
-├── test_list_connections.py  # Test listing active connections
-├── test_ssh_params.py        # Test SSH parameters
+├── test_connection.py        # Test SSH connection handling
 ├── test_connection_pool.py   # Test connection pool management
-└── test_action_provider.py   # Test action provider functionality
+├── test_disconnect.py        # Test disconnection
+├── test_download.py          # Test file downloads via SFTP
+├── test_execute.py           # Test remote command execution
+├── test_keys.py              # Test SSH key handling
+├── test_list_connections.py  # Test listing active connections
+├── test_params.py            # Test SSH parameters
+├── test_remote_shell.py      # Test remote shell commands
+├── test_sftp.py              # Test SFTP operations
+├── test_ssh_connect.py       # Test SSH connection
+├── test_status.py            # Test connection status checks
+└── test_upload.py            # Test file uploads via SFTP
 ```
 
 ## Actions
@@ -37,10 +38,12 @@ tests/action_providers/ssh/
 - `ssh_connect`: Establish an SSH connection to a remote server
   - Supports password and key-based authentication
   - Generates a connection ID for future operations if one is not provided
+  - Optional known_hosts_file parameter for custom host verification
 
 - `remote_shell`: Execute shell commands on the remote server
   - Uses an established connection
   - Returns command output
+  - Configurable timeout and stderr handling
 
 - `ssh_disconnect`: Close an SSH connection
   - Frees up resources
@@ -59,6 +62,8 @@ tests/action_providers/ssh/
 
 - `ssh_add_host_key`: Add a host key to the known hosts file
   - Useful for host verification
+  - Supports various key types (ssh-rsa, ssh-ed25519, etc.)
+  - Configurable known_hosts file path
 
 ## Adding New Actions
 
@@ -76,14 +81,24 @@ To add new SSH actions:
 
 ## Prompts
 
-### *Please open an SSH connection to example.com as admin user*
+### *Please show my hyperbolic gpu instances*
 
 <details>
 <summary>Tool Output</summary>
 
 ```
-Connection ID: conn-123456
-Successfully connected to example.com as admin
+Your Rented GPU Instances:
+Instance ID: positive-peach-goat
+Status: running (Ready to use)
+GPU Model: NVIDIA-GeForce-RTX-4090
+GPU Count: 1
+GPU Memory: 24.0 GB
+SSH Command: ssh ubuntu@positive-peach-goat.1.cricket.hyperbolic.xyz -p 31274
+
+SSH Connection Instructions:
+1. Wait until instance status is 'running'
+2. Use the ssh_connect action with the provided host and username
+3. Once connected, use remote_shell to execute commands
 ```
 </details>
 
@@ -91,24 +106,41 @@ Successfully connected to example.com as admin
 <summary>Agent Output</summary>
 
 ```
-I've established an SSH connection to example.com using the admin user credentials. The connection has been assigned ID conn-123456, which you'll need to reference for any commands or file transfers you want to perform on this server.
+You have a running GPU instance with the following details:
+
+- **Instance ID**: positive-peach-goat
+- **Status**: running (Ready to use)
+- **GPU Model**: NVIDIA-GeForce-RTX-4090
+- **GPU Count**: 1
+- **GPU Memory**: 24.0 GB
+- **SSH Command**: `ssh ubuntu@positive-peach-goat.1.cricket.hyperbolic.xyz -p 31274`
+
+If you would like me to SSH into this instance, please provide the password for the `ubuntu` user, or the private key if you are using key-based authentication.
 ```
 </details>
 
-### *Run the ls -la command on the remote server*
+### *Please open an ssh connection to my hyperbolic gpu instance using /Users/chris/.ssh/hyperbolic*
 
 <details>
 <summary>Tool Output</summary>
 
 ```
-Output from connection 'conn-123456':
+Error: Host verification: Host key verification failed for [positive-peach-goat.1.cricket.hyperbolic.xyz]:31274. Server sent:
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIG6/psa2jo3Wu2XVnImwzQ10eQg+M/9RqrcWwdZY7mU
 
-total 20
-drwxr-xr-x  5 admin admin 4096 Dec 10 12:34 .
-drwxr-xr-x 22 root  root  4096 Dec  1 09:00 ..
--rw-r--r--  1 admin admin  220 Dec  1 09:00 .bash_logout
--rw-r--r--  1 admin admin 3771 Dec  1 09:00 .bashrc
--rw-r--r--  1 admin admin  807 Dec  1 09:00 .profile
+To add this host key, use the ssh_add_host_key action with the following parameters:
+  host: [positive-peach-goat.1.cricket.hyperbolic.xyz]:31274
+  key: AAAAC3NzaC1lZDI1NTE5AAAAIIG6/psa2jo3Wu2XVnImwzQ10eQg+M/9RqrcWwdZY7mU
+  key_type: ssh-ed25519
+```
+
+```
+Host key for '[positive-peach-goat.1.cricket.hyperbolic.xyz]:31274' successfully added to /Users/chris/.ssh/known_hosts
+```
+
+```
+Connection ID: hyperbolic-gpu-instance
+Successfully connected to positive-peach-goat.1.cricket.hyperbolic.xyz as ubuntu
 ```
 </details>
 
@@ -116,19 +148,34 @@ drwxr-xr-x 22 root  root  4096 Dec  1 09:00 ..
 <summary>Agent Output</summary>
 
 ```
-I've executed the 'ls -la' command on the remote server, which shows a detailed listing of all files in the current directory, including hidden files. The output shows the home directory contains the standard bash configuration files (.bash_logout, .bashrc, and .profile) with appropriate permissions.
+You are now successfully connected to your Hyperbolic GPU instance with the following details:
+
+- **Connection ID**: hyperbolic-gpu-instance
+- **Host**: positive-peach-goat.1.cricket.hyperbolic.xyz
+- **Username**: ubuntu
+
+You can now execute commands on the instance. If you need to run specific commands or perform actions, just let me know!
 ```
 </details>
 
-### *Create a file on the remote server with the current date*
+### *Please run `ls -lah` on my hyperbolic gpu instance*
 
 <details>
 <summary>Tool Output</summary>
 
 ```
-Output from connection 'conn-123456':
+Output from connection 'hyperbolic-gpu-instance':
 
-The file was created successfully.
+total 48K
+drwxr-x--- 6 ubuntu ubuntu 4.0K Mar 12 10:54 .
+drwxr-xr-x 1 root   root   4.0K Feb 14 20:24 ..
+-rw-r--r-- 1 ubuntu ubuntu  220 Jan  6  2022 .bash_logout
+-rw-r--r-- 1 ubuntu ubuntu 3.7K Jan  6  2022 .bashrc
+drwx------ 2 ubuntu ubuntu 4.0K Mar 12 10:54 .cache
+drwxrwxr-x 3 ubuntu ubuntu 4.0K Mar 12 10:54 .config
+-rw-r--r-- 1 ubuntu ubuntu  807 Jan  6  2022 .profile
+drwxr-xr-x 2 ubuntu ubuntu 4.0K Feb 14 20:24 .ssh
+drwx------ 2 ubuntu ubuntu  16K Mar 12 10:51 lost+found
 ```
 </details>
 
@@ -136,17 +183,34 @@ The file was created successfully.
 <summary>Agent Output</summary>
 
 ```
-I've created a new file on the remote server containing the current date. I used the 'date' command to get the current date and time, and then redirected its output to a file named 'current_date.txt' in your home directory on the server. The file was created successfully.
+The output of the `ls -lah` command on your Hyperbolic GPU instance is as follows:
+
+total 48K
+drwxr-x--- 6 ubuntu ubuntu 4.0K Mar 12 10:54 .
+drwxr-xr-x 1 root   root   4.0K Feb 14 20:24 ..
+-rw-r--r-- 1 ubuntu ubuntu  220 Jan  6  2022 .bash_logout
+-rw-r--r-- 1 ubuntu ubuntu 3.7K Jan  6  2022 .bashrc
+drwx------ 2 ubuntu ubuntu 4.0K Mar 12 10:54 .cache
+drwxrwxr-x 3 ubuntu ubuntu 4.0K Mar 12 10:54 .config
+-rw-r--r-- 1 ubuntu ubuntu  807 Jan  6  2022 .profile
+drwxr-xr-x 2 ubuntu ubuntu 4.0K Feb 14 20:24 .ssh
+drwx------ 2 ubuntu ubuntu  16K Mar 12 10:51 lost+found
+
+If you need to run more commands or require further assistance, just let me know!
 ```
 </details>
 
-### *Upload a local file data.txt to the remote server*
+### *Please show my hyperbolic gpu instance ssh connection status*
 
 <details>
 <summary>Tool Output</summary>
 
 ```
-File successfully uploaded to /home/admin/data.txt on connection 'conn-123456'
+Connection ID: hyperbolic-gpu-instance
+Status: Connected
+Host: positive-peach-goat.1.cricket.hyperbolic.xyz:31274
+Username: ubuntu
+Connected since: 2025-03-12 03:54:10
 ```
 </details>
 
@@ -154,17 +218,29 @@ File successfully uploaded to /home/admin/data.txt on connection 'conn-123456'
 <summary>Agent Output</summary>
 
 ```
-I've uploaded the data.txt file to the remote server. The file is now available at /home/admin/data.txt on example.com. If you need to modify this file on the remote server, you can use the remote_shell command to edit it, or download it again after making changes.
+The SSH connection status for your Hyperbolic GPU instance is as follows:
+
+- **Connection ID**: hyperbolic-gpu-instance
+- **Status**: Connected
+- **Host**: positive-peach-goat.1.cricket.hyperbolic.xyz:31274
+- **Username**: ubuntu
+- **Connected since**: March 12, 2025, 03:54:10
+
+If you need any further assistance or commands to be executed, feel free to ask!
 ```
 </details>
 
-### *Download the logs.txt file from the remote server*
+### *Please list open ssh connections*
 
 <details>
 <summary>Tool Output</summary>
 
 ```
-File successfully downloaded from /home/admin/logs.txt to /home/user/logs.txt on connection 'conn-123456'
+Active SSH Connections: 1
+Connection ID: hyperbolic-gpu-instance
+Status: Connected
+Host: positive-peach-goat.1.cricket.hyperbolic.xyz:31274
+Username: ubuntu
 ```
 </details>
 
@@ -172,17 +248,26 @@ File successfully downloaded from /home/admin/logs.txt to /home/user/logs.txt on
 <summary>Agent Output</summary>
 
 ```
-I've downloaded the logs.txt file from the remote server to your local machine. The file was located at /home/admin/logs.txt on the server and has been saved to /home/user/logs.txt on your local machine. You can now access and analyze these logs locally.
+You currently have the following active SSH connection:
+
+- **Connection ID**: hyperbolic-gpu-instance
+- **Status**: Connected
+- **Host**: positive-peach-goat.1.cricket.hyperbolic.xyz:31274
+- **Username**: ubuntu
+
+If you need any further actions or information, just let me know!
 ```
 </details>
 
-### *Close the SSH connection to example.com*
+### *Please upload from my local /Users/chris/hello.txt to /home/ubuntu/hello.txt*
 
 <details>
 <summary>Tool Output</summary>
 
 ```
-Connection 'conn-123456' successfully closed.
+File upload successful:
+Local file: /Users/chris/hello.txt
+Remote destination: /home/ubuntu/hello.txt
 ```
 </details>
 
@@ -190,6 +275,98 @@ Connection 'conn-123456' successfully closed.
 <summary>Agent Output</summary>
 
 ```
-I've closed the SSH connection to example.com (connection ID: conn-123456). All resources associated with this connection have been released. If you need to connect again, I can establish a new SSH connection for you.
+The file upload was successful! The file **hello.txt** has been uploaded from your local path **/Users/chris/hello.txt** to the remote path **/home/ubuntu/hello.txt** on your Hyperbolic GPU instance.
+
+If you need further assistance or have more tasks, feel free to ask!
+```
+</details>
+
+### *Please run `cat hello.txt`*
+
+<details>
+<summary>Tool Output</summary>
+
+```
+Output from connection 'hyperbolic-gpu-instance':
+
+world
+```
+</details>
+
+<details>
+<summary>Agent Output</summary>
+
+```
+The output of the `cat hello.txt` command is as follows:
+
+```
+world
+```
+
+If you have any more commands to run or need further assistance, just let me know!
+```
+</details>
+
+### *Please run `echo 'fizz' > buzz.txt`*
+
+<details>
+<summary>Tool Output</summary>
+
+```
+Output from connection 'hyperbolic-gpu-instance':
+
+```
+</details>
+
+<details>
+<summary>Agent Output</summary>
+
+```
+The command `echo 'fizz' > buzz.txt` has been executed successfully. 
+
+If you need to check the contents of **buzz.txt** or perform any other actions, just let me know!
+```
+</details>
+
+### *Please download buzz.txt to /Users/chris/buzz.txt*
+
+<details>
+<summary>Tool Output</summary>
+
+```
+File download successful:
+Remote file: buzz.txt
+Local destination: /Users/chris/buzz.txt
+```
+</details>
+
+<details>
+<summary>Agent Output</summary>
+
+```
+The file **buzz.txt** has been successfully downloaded from your Hyperbolic GPU instance to your local path **/Users/chris/buzz.txt**.
+
+If you need any further assistance or have more tasks, feel free to ask!
+```
+</details>
+
+### *Please close all ssh connections*
+
+<details>
+<summary>Tool Output</summary>
+
+```
+Connection ID: hyperbolic-gpu-instance
+Disconnected from positive-peach-goat.1.cricket.hyperbolic.xyz
+```
+</details>
+
+<details>
+<summary>Agent Output</summary>
+
+```
+The SSH connection to your Hyperbolic GPU instance has been successfully closed. 
+
+If you need any further assistance or have more tasks, just let me know!
 ```
 </details>

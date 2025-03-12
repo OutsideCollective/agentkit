@@ -7,20 +7,24 @@ settings information from Hyperbolic services.
 from .types import WalletLinkResponse
 
 
-def format_wallet_link_response(response_data: WalletLinkResponse) -> str:
+def format_wallet_link_response(response_data: WalletLinkResponse, wallet_address: str) -> str:
     """Format wallet linking response into a readable string.
 
     Args:
         response_data: WalletLinkResponse object from wallet linking API.
+        wallet_address: Optional wallet address to include in the output.
 
     Returns:
         str: Formatted response string with next steps.
 
     """
-    # Format the API response using Pydantic's model_dump_json method
-    formatted_response = response_data.model_dump_json(indent=2)
-
-    # Add next steps information
+    output = []
+    
+    output.append(response_data.model_dump_json(indent=2))
+    
+    if response_data.success is True:
+        output.append(f"wallet_address: {wallet_address}")
+    
     hyperbolic_address = "0xd3cB24E0Ba20865C530831C85Bd6EbC25f6f3B60"
     next_steps = (
         "\nNext Steps:\n"
@@ -32,7 +36,9 @@ def format_wallet_link_response(response_data: WalletLinkResponse) -> str:
         f"3. Send to this Hyperbolic address: {hyperbolic_address}"
     )
 
-    return f"{formatted_response}\n{next_steps}"
+    output.append(next_steps)
+
+    return "\n".join(output)
 
 
 __all__ = [

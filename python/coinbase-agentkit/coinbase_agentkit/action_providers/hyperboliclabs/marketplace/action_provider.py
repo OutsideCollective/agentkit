@@ -154,7 +154,7 @@ Important notes:
 This tool retrieves all available GPU machines of a specific model on the Hyperbolic platform.
 
 Required inputs:
-- gpu_model: The GPU model to filter by (e.g., "NVIDIA A100")
+- gpu_model: The GPU model to filter by (e.g., "NVIDIA-GeForce-RTX-4090")
 
 Example successful response:
     Available NVIDIA A100 GPU Options:

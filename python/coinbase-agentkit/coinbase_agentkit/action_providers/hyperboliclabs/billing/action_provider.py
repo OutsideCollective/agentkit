@@ -145,6 +145,9 @@ Important notes:
 
             response = self.marketplace.get_instance_history()
 
+            if not response:
+                return "Could not retrieve instance history. Please try again later."
+
             if not response.instance_history:
                 return "No rental history found."
 

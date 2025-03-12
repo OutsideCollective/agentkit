@@ -24,8 +24,11 @@ def calculate_duration_seconds(start_time: str, end_time: str) -> float:
         float: Duration in seconds.
 
     """
-    start = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-    end = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
+    if not start_time or not end_time:
+        return 0.0
+        
+    start = datetime.fromisoformat(start_time.replace("Z", "+00:00") if "Z" in start_time else start_time)
+    end = datetime.fromisoformat(end_time.replace("Z", "+00:00") if "Z" in end_time else end_time)
     duration = end - start
     return duration.total_seconds()
 
@@ -73,44 +76,73 @@ def format_spend_history(instance_history: InstanceHistoryResponse, limit: int =
     instances_summary = []
 
     for instance in instance_history.instance_history:
-        duration_seconds = calculate_duration_seconds(instance.started_at, instance.terminated_at)
-        duration_hours = duration_seconds / 3600.0
-        cost = (duration_hours * instance.price.amount) / 100.0
-        total_cost += cost
+        has_complete_time_data = instance.started_at and instance.terminated_at
+        
+        duration_seconds = 0
+        duration_hours = 0
+        cost = 0
+        
+        if has_complete_time_data:
+            duration_seconds = calculate_duration_seconds(instance.started_at, instance.terminated_at)
+            duration_hours = duration_seconds / 3600.0
+            cost = (duration_hours * instance.price.amount) / 100.0
+            total_cost += cost
+        
+        gpu_models = []
+        if instance.hardware and instance.hardware.gpus and len(instance.hardware.gpus) > 0:
+            gpu_models = [gpu.model for gpu in instance.hardware.gpus if gpu.model]
+            
+        gpu_model = ", ".join(gpu_models) if gpu_models else "Unknown GPU"
+        gpu_count = instance.gpu_count or 0
 
-        gpu_model = instance.hardware.gpus[0].model if instance.hardware.gpus else "Unknown GPU"
-        gpu_count = instance.gpu_count
+        if has_complete_time_data:
+            if gpu_models:
+                gpu_count_per_model = gpu_count / len(gpu_models) if len(gpu_models) > 0 else 0
+                cost_per_model = cost / len(gpu_models) if len(gpu_models) > 0 else 0
+                
+                for model in gpu_models:
+                    gpu_stats[model]["count"] += gpu_count_per_model
+                    gpu_stats[model]["total_cost"] += cost_per_model
+                    gpu_stats[model]["total_seconds"] += duration_seconds
+            else:
+                gpu_stats["Unknown GPU"]["count"] += gpu_count
+                gpu_stats["Unknown GPU"]["total_cost"] += cost
+                gpu_stats["Unknown GPU"]["total_seconds"] += duration_seconds
 
-        gpu_stats[gpu_model]["count"] += gpu_count
-        gpu_stats[gpu_model]["total_cost"] += cost
-        gpu_stats[gpu_model]["total_seconds"] += duration_seconds
-
-        instances_summary.append(
-            {
-                "name": instance.instance_name,
-                "gpu_model": gpu_model,
-                "gpu_count": gpu_count,
-                "duration_seconds": int(duration_seconds),
-                "cost": round(cost, 2),
-            }
-        )
+        summary = {
+            "name": instance.instance_name or "unnamed-instance",
+            "gpu_model": gpu_model,
+            "gpu_count": gpu_count,
+            "duration_seconds": int(duration_seconds) if has_complete_time_data else None,
+            "cost": round(cost, 2) if has_complete_time_data else None,
+            "has_complete_time_data": has_complete_time_data
+        }
+        instances_summary.append(summary)
 
     output = ["=== GPU Rental Spending Analysis ===\n"]
 
-    output.append(f"Instance Rentals (showing {limit} most recent):")
+    output.append(f"Instance Rentals (showing {min(len(instances_summary), limit)} most recent):")
     for instance in instances_summary[:limit]:
         output.append(f"- {instance['name']}:")
         output.append(f"  GPU: {instance['gpu_model']} (Count: {instance['gpu_count']})")
-        output.append(f"  Duration: {instance['duration_seconds']} seconds")
-        output.append(f"  Cost: ${instance['cost']:.2f}")
+        
+        if instance['has_complete_time_data']:
+            output.append(f"  Duration: {instance['duration_seconds']} seconds")
+            output.append(f"  Cost: ${instance['cost']:.2f}")
+        else:
+            output.append("  Duration: Unavailable (missing timestamp data)")
+            output.append("  Cost: Unavailable")
 
-    output.append(f"\nGPU Type Statistics (showing {limit} most recent):")
-    for gpu_model, stats in list(gpu_stats.items())[:limit]:
-        output.append(f"\n{gpu_model}:")
-        output.append(f"  Total Rentals: {stats['count']}")
-        output.append(f"  Total Time: {int(stats['total_seconds'])} seconds")
-        output.append(f"  Total Cost: ${stats['total_cost']:.2f}")
+    if gpu_stats:
+        output.append(f"\nGPU Type Statistics (showing {min(len(gpu_stats), limit)} most recent):")
+        for gpu_model, stats in list(gpu_stats.items())[:limit]:
+            output.append(f"\n{gpu_model}:")
+            output.append(f"  Total Rentals: {stats['count']}")
+            output.append(f"  Total Time: {int(stats['total_seconds'])} seconds")
+            output.append(f"  Total Cost: ${stats['total_cost']:.2f}")
 
-    output.append(f"\nTotal Spending: ${total_cost:.2f}")
+        output.append(f"\nTotal Spending: ${total_cost:.2f}")
+    else:
+        output.append("\nNo complete rental data available to calculate statistics.")
 
     return "\n".join(output)

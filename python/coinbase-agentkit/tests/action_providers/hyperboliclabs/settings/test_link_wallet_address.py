@@ -21,6 +21,7 @@ def test_link_wallet_address_success(provider):
 
         assert '"success": true' in result
         assert '"message": "Wallet address linked successfully"' in result
+        assert f"wallet_address: {VALID_ETH_ADDRESS}" in result
 
         assert "Next Steps:" in result
         assert "1. Your wallet has been successfully linked to your Hyperbolic account" in result
